@@ -85,7 +85,6 @@ your_example/
 
 ## 📞 Support
 
-- **Community Forum**: [Cybus Community](https://community.cybus.io/)
 - **Documentation**: [docs.cybus.io](https://docs.cybus.io/)
 - **Issues**: [GitHub Issues](https://github.com/OmarElkadiCybus/cybus-gallery/issues)
 
