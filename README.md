@@ -10,10 +10,36 @@ This repository contains **real-world examples** and **learning resources** for 
 
 ### 📊 [Data Processing Rules Examples](./data_processing_rules_examples/)
 
+Complete guide to Cybus Connectware's data processing rules with hands-on examples:
+
+| Rule Type | Purpose | Difficulty | Examples |
+|-----------|---------|------------|----------|
+| **Transform** | Modify and reshape data | ⭐ Beginner | JSONata expressions, field mapping |
+| **Filter** | Select data based on conditions | ⭐ Beginner | Threshold filtering, conditional logic |
+| **Parse** | Extract structured data | ⭐⭐ Intermediate | JSON parsing, regex extraction |
+| **Stash** | Store data for comparison | ⭐⭐ Intermediate | Current vs previous, trend detection |
+| **SetContextVars** | Set dynamic variables | ⭐⭐ Intermediate | Dynamic routing, stateful processing |
+| **COV** | Change of value detection | ⭐⭐ Intermediate | Event-driven processing |
+| **Collect** | Combine multiple sources | ⭐⭐⭐ Advanced | Multi-sensor aggregation |
+| **Burst** | Split arrays into messages | ⭐⭐⭐ Advanced | Batch processing, array handling |
+
+### 🚀 [Advanced Data Mapping](./advanced_data_mapping/)
+
+Master enterprise-grade multi-topic data integration and UNS (Unified Namespace) patterns:
+
+| Approach | Complexity | Purpose | Best For |
+|----------|------------|---------|----------|
+| **[Arrays](./advanced_data_mapping/01_array/)** | ⭐ Basic | Different topic roots, mixed endpoints | Different systems, precise control |
+| **[Wildcards](./advanced_data_mapping/02_wildcards/)** | ⭐⭐ Intermediate | Pattern matching, auto-discovery | Hierarchical data, device fleets |
+| **[Wildcards + Collect](./advanced_data_mapping/03_wildcards_with_collect/)** | ⭐⭐⭐ Advanced | Cross-correlation, analytics | Enterprise integration, MES systems |
+| **[Dynamic Publish](./advanced_data_mapping/04_dynamic_publish_topic/)** | ⭐⭐⭐⭐ Expert | Content-based routing, UNS | Multi-tenant, business logic routing |
+
 **🎯 Featured Examples:**
 - **[Complete Rule Chain](./data_processing_rules_examples/complete_rule_chain_example.scf.yaml)** - Simple 3-rule temperature processing
 - **[Stash Patterns](./data_processing_rules_examples/04_stash/)** - 5 different stash usage patterns
 - **[Multi-Station Counter](./data_processing_rules_examples/04_stash/service.scf.yaml#L214)** - Real-world per-station event counting
+- **[Factory Line Analytics](./advanced_data_mapping/03_wildcards_with_collect/02_array_of_topics_patterns/)** - Cross-domain correlation
+- **[UNS Implementation](./advanced_data_mapping/04_dynamic_publish_topic/)** - Enterprise namespace transformation
 
 ## 🚀 Quick Start
 
@@ -51,15 +77,30 @@ cybus-tool upload service.scf.yaml
 2. **[Collect Rules](./data_processing_rules_examples/07_collect/)** - Handle multiple data sources
 3. **[Multi-Station Counter Pattern](./data_processing_rules_examples/04_stash/service.scf.yaml#L214)** - Real-world state management
 
+**🚀 Enterprise Integration Expert?**
+1. **[Array Mapping](./advanced_data_mapping/01_array/)** - Multi-system integration foundations
+2. **[Wildcard Patterns](./advanced_data_mapping/02_wildcards/)** - Scalable topic discovery
+3. **[Enterprise Analytics](./advanced_data_mapping/03_wildcards_with_collect/)** - Cross-domain correlation
+4. **[UNS Implementation](./advanced_data_mapping/04_dynamic_publish_topic/)** - Unified Namespace transformation
+
 ## 🏭 Real-World Use Cases
 
 These examples are based on **actual Industrial IoT scenarios**:
 
+### 🔧 **Data Processing Scenarios**
 - **🌡️ Temperature Monitoring** - Sensor data processing with alerts
 - **🏭 Production Line Tracking** - Multi-station event counting
 - **📊 Data Validation** - Compare current vs historical values
 - **🔄 Protocol Translation** - Transform between different data formats
 - **📈 Trend Detection** - Identify changes and patterns in sensor data
+
+### 🏢 **Enterprise Integration Scenarios**
+- **🏗️ Manufacturing Execution Systems (MES)** - Cross-domain production analytics
+- **🌐 Unified Namespace (UNS)** - Enterprise-wide data standardization
+- **🏢 Multi-Tenant SaaS** - Content-based routing and isolation
+- **📱 Building Automation** - Hierarchical sensor data aggregation
+- **🚗 Fleet Management** - Device discovery and health monitoring
+- **⚡ Legacy System Modernization** - Transform to ISA-95 compliance
 
 ## 🤝 Contributing
 
