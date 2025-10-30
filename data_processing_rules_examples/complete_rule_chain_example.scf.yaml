@@ -1,0 +1,37 @@
+description: Simple Rule Chain Example - Temperature Processing
+metadata:
+  name: Simple Rule Chain Example
+
+resources:
+  # Simple 3-rule chain mapping
+  mapping:
+    type: Cybus::Mapping
+    properties:
+      mappings:
+      - subscribe:
+          endpoint: !ref sensorEndpoint
+        publish:
+          topic: alerts/temp
+        rules:
+        # Rule 1: Clean data
+        - transform:
+            expression: |
+              {
+                "temp_c": ($.temp_f - 32) * 5/9,
+                "device": $.sensor,
+                "timestamp": $now()
+              }
+
+        # Rule 2: Only high temperatures
+        - filter:
+            expression: $.temp_c > 30
+
+        # Rule 3: Format alert
+        - transform:
+            expression: |
+              {
+                "alert": "High temperature",
+                "temperature": $.temp_c,
+                "device": $.device,
+                "time": $.timestamp
+              }
