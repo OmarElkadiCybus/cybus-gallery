@@ -10,19 +10,6 @@ This repository contains **real-world examples** and **learning resources** for 
 
 ### 📊 [Data Processing Rules Examples](./data_processing_rules_examples/)
 
-Complete guide to Cybus Connectware's data processing rules with hands-on examples:
-
-| Rule Type | Purpose | Difficulty | Examples |
-|-----------|---------|------------|----------|
-| **Transform** | Modify and reshape data | ⭐ Beginner | JSONata expressions, field mapping |
-| **Filter** | Select data based on conditions | ⭐ Beginner | Threshold filtering, conditional logic |
-| **Parse** | Extract structured data | ⭐⭐ Intermediate | JSON parsing, regex extraction |
-| **Stash** | Store data for comparison | ⭐⭐ Intermediate | Current vs previous, trend detection |
-| **SetContextVars** | Set dynamic variables | ⭐⭐ Intermediate | Dynamic routing, stateful processing |
-| **COV** | Change of value detection | ⭐⭐ Intermediate | Event-driven processing |
-| **Collect** | Combine multiple sources | ⭐⭐⭐ Advanced | Multi-sensor aggregation |
-| **Burst** | Split arrays into messages | ⭐⭐⭐ Advanced | Batch processing, array handling |
-
 **🎯 Featured Examples:**
 - **[Complete Rule Chain](./data_processing_rules_examples/complete_rule_chain_example.scf.yaml)** - Simple 3-rule temperature processing
 - **[Stash Patterns](./data_processing_rules_examples/04_stash/)** - 5 different stash usage patterns
