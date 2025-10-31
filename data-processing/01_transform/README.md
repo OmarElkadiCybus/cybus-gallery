@@ -1,41 +1,90 @@
-# Transform Rule: Reshape Your Data
+# Transform Rules: Data Conversion & Restructuring
 
-## What This Does
-**Transform rule** reshapes your message data into any JSON structure you want. Rename fields, add calculations, include timestamps, or completely restructure your data.
+**Purpose**: Learn how to convert, restructure, and enrich data using transform rules  
+**Complexity**: ⭐ Beginner | **Focus**: JSONata expressions and data transformation  
+**Prerequisites**: Basic understanding of JSON data structures
 
-**Quick Example:**
+## What You'll Learn
+
+By the end of this tutorial, you'll understand:
+- ✅ **Field renaming and mapping** between different data formats
+- ✅ **Mathematical calculations** for unit conversions and derived values  
+- ✅ **Data enrichment** by adding timestamps, metadata, and computed fields
+- ✅ **Conditional logic** for status determination and data validation
+- ✅ **JSONata expressions** for powerful data manipulation
+
+## The Problem: Data Format Mismatches
+
+Raw sensor data often doesn't match the format your applications need:
+
+```json
+// ❌ Raw sensor format (abbreviated field names, missing metadata)
+{"temp": 25, "hum": 60, "id": "sensor-01", "loc": "warehouse"}
+
+// ✅ Required application format (descriptive names, enriched data)
+{
+  "temperature": 25,
+  "humidity": 60, 
+  "device_id": "sensor-01",
+  "location": "warehouse",
+  "timestamp": "2025-10-31T10:30:00Z",
+  "unit": "celsius"
+}
+```
+
+**Solution**: Transform rules reshape data into the exact format you need.
+
+## Step 1: Basic Field Renaming
+
+Start with simple field mapping - the most common transform use case:
+
 ```yaml
-# Turn {"temp": 25, "device": "sensor-01"} 
-# Into {"temperature": 25, "device_name": "sensor-01", "unit": "celsius"}
+rules:
 - transform:
     expression: |
       {
-        "temperature": $.temp,      # Rename field
-        "device_name": $.device,    # Rename field  
-        "unit": "celsius",          # Add new field
-        "timestamp": $now()         # Add timestamp
+        "temperature": $.temp,     # Rename temp → temperature
+        "humidity": $.hum,         # Rename hum → humidity  
+        "device_id": $.id,         # Rename id → device_id
+        "location": $.loc          # Rename loc → location
       }
 ```
 
-## Quick Setup
-1. **Deploy the service**: `docker exec -it connectware-container cybus-ctl commissioning-file apply service.scf.yaml`
-2. **Send test data**: Publish to input topics (see examples below)
-3. **Check results**: Subscribe to output topics to see transformed data
+**Example Flow:**
+- **Input**: `{"temp": 25, "hum": 60, "id": "sensor-01", "loc": "warehouse"}`
+- **Output**: `{"temperature": 25, "humidity": 60, "device_id": "sensor-01", "location": "warehouse"}`
 
-## Key Examples
+## Step 2: Data Enrichment
 
-### **1. Field Renaming** (`sensors/raw` → `sensors/renamed`)
+Add new fields with timestamps, metadata, and computed values:
+
 ```yaml
-# Input: {"temp": 25, "hum": 60, "id": "sensor-01", "loc": "warehouse"}
+rules:
 - transform:
     expression: |
       {
-        "temperature": $.temp,     # temp → temperature
-        "humidity": $.hum,         # hum → humidity
-        "device_id": $.id,         # id → device_id
-        "location": $.loc          # loc → location
+        "original_data": $,           # Keep all original data
+        "timestamp": $now(),          # Add current timestamp
+        "source": "sensor-network",   # Add static metadata  
+        "is_valid": $.value > 0,      # Add validation flag
+        "processing_info": {
+          "processor": "cybus-connectware",
+          "version": "1.0"
+        }
       }
-# Output: {"temperature": 25, "humidity": 60, "device_id": "sensor-01", "location": "warehouse"}
+```
+
+**Example Flow:**
+- **Input**: `{"value": 150, "sensor": "temp-01"}`
+- **Output**: 
+```json
+{
+  "original_data": {"value": 150, "sensor": "temp-01"},
+  "timestamp": 1730203200000,
+  "source": "sensor-network", 
+  "is_valid": true,
+  "processing_info": {"processor": "cybus-connectware", "version": "1.0"}
+}
 ```
 
 ### **2. Temperature Conversion** (`temperature/fahrenheit` → `temperature/converted`)

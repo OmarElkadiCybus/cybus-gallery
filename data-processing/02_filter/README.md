@@ -1,16 +1,38 @@
 # Filter Rules: Conditional Message Processing
 
-Filter rules act as **gatekeepers** - they conditionally pass messages based on JSONata expressions that evaluate to true/false.
+**Purpose**: Learn how to conditionally process messages using filter rules  
+**Complexity**: ⭐ Beginner | **Focus**: Boolean logic and conditional routing  
+**Prerequisites**: Basic JSONata expressions and JSON data understanding
 
-- **Expression returns `true`**: Message passes through unchanged
-- **Expression returns `false`**: Message is discarded
-- **No data modification**: Unlike transform rules, filters don't change message content
+## What You'll Learn
 
-## Three Essential Patterns
+By the end of this tutorial, you'll understand:
+- ✅ **Basic filtering** by field values and conditions
+- ✅ **Multi-condition logic** with AND, OR, and NOT operators
+- ✅ **Advanced filtering** with arrays, objects, and complex data structures
+- ✅ **Performance optimization** for high-throughput filtering
+- ✅ **Filter chaining** combined with other processing rules
 
-### 1. Basic Filtering (Start Here)
+## How Filter Rules Work
 
-Filter by simple field values - the most common pattern:
+Filter rules act as **intelligent gatekeepers**:
+
+```yaml
+rules:
+- filter:
+    expression: temperature > 85    # Boolean condition
+```
+
+**Behavior:**
+- **Expression returns `true`** → Message passes through **unchanged**
+- **Expression returns `false`** → Message is **discarded** (not processed further)  
+- **No data modification** → Unlike transform rules, filters don't change content
+
+**Key Point**: Filters control **which** messages get processed, not **how** they're processed.
+
+## Step 1: Basic Field Filtering
+
+Start with simple field value conditions - the foundation of all filtering:
 
 ```yaml
 rules:
@@ -18,14 +40,25 @@ rules:
     expression: level = "ERROR"    # Only pass ERROR level messages
 ```
 
-**Common Examples**:
+**Common Basic Filters:**
 ```yaml
+# Numeric comparisons
 temperature > 85                  # Temperature alarms
-status = "active"                # Active devices only  
-priority in ["high", "critical"] # Important messages
+battery_level < 20               # Low battery alerts
+pressure >= 30 and pressure <= 100  # Normal operating range
+
+# String matching  
+status = "active"                # Active devices only
+device_type = "sensor"           # Specific device types
+
+# Array membership
+priority in ["high", "critical"] # Important messages only
 ```
 
-**Use Cases**: Log filtering, status routing, simple categorization
+**Example Flow:**
+- **Input 1**: `{"temperature": 90, "device": "sensor-01"}` → **Passes** (90 > 85)
+- **Input 2**: `{"temperature": 70, "device": "sensor-02"}` → **Discarded** (70 ≤ 85)
+- **Input 3**: `{"temperature": 95, "device": "sensor-03"}` → **Passes** (95 > 85)
 
 ### 2. Multi-Condition Logic
 

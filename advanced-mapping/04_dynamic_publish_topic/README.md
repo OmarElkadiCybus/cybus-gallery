@@ -37,19 +37,41 @@ But what about dynamic scenarios where routing depends on:
 - **Dynamic system integration**: Route to different systems based on payload content
 - **UNS (Unified Namespace)**: Transform legacy systems into standardized enterprise hierarchies
 
-## Folder Structure
+## Tutorial Structure
 
-### [wildcards/](wildcards/)
-Learn how to use wildcard segments from input topics to construct dynamic publish topics:
-- Extract location, device, or system identifiers from topic paths
-- Build hierarchical output topics using wildcard values
-- Route messages based on topic structure
+Learn dynamic publishing through two progressive approaches:
 
-### [set_context_vars/](set_context_vars/)
-Learn how to use payload data to create dynamic publish topics:
-- Extract routing information from message payloads
-- Use setContextVars rule to prepare dynamic values
-- Build complex topic paths from payload content
+### 📁 [using_wildcards/](using_wildcards/) - Topic-Based Routing (Start Here)
+**Complexity**: ⭐⭐ Intermediate | **Focus**: Using wildcard values for output topics
+
+**What You'll Learn:**
+- Extract segments from input topics: `sensors/{room}/temp` → `alerts/{room}/high`
+- Build hierarchical output topics using `$context.vars.{name}` 
+- Route messages based on topic structure patterns
+- Implement UNS (Unified Namespace) transformations
+
+**Perfect For:**
+- **Building automation**: Route by room, floor, or zone from topic structure
+- **Device management**: Route by location and device ID extracted from topics  
+- **Legacy system modernization**: Transform to standardized enterprise hierarchies
+- **Simple dynamic routing**: When routing logic is embedded in topic names
+
+---
+
+### 📁 [using_set_context_vars/](using_set_context_vars/) - Content-Based Routing (Advanced)
+**Complexity**: ⭐⭐⭐ Advanced | **Focus**: Using payload data for routing decisions
+
+**What You'll Learn:**
+- Extract routing info from message content: `{"tenant": "acme", "priority": "high"}`
+- Use setContextVars rule to prepare dynamic routing variables
+- Apply business logic and conditional routing based on data values
+- Build multi-tenant and enterprise-grade routing systems
+
+**Perfect For:**
+- **Multi-tenant SaaS**: Route by organization, service, or user from payload
+- **Alert systems**: Route by severity, destination, or escalation rules
+- **Business process routing**: Apply complex conditional logic
+- **Content-driven systems**: When routing depends on message data, not topic structure
 
 ## Comparison: Wildcards vs SetContextVars
 
@@ -69,13 +91,37 @@ Learn how to use payload data to create dynamic publish topics:
 ✅ **Scalability**: Handle dynamic systems without hardcoded topic mappings
 ✅ **UNS Compliance**: Transform legacy topic structures into ISA-95 compliant hierarchies
 
-## Getting Started
+## Learning Path
 
-1. **Start with [wildcards/](wildcards/)** if you need to route based on topic structure
-2. **Try [set_context_vars/](set_context_vars/)** if you need to route based on payload content
-3. **Combine both** for advanced routing scenarios
+### 🎯 **Recommended Sequence**
 
-Each folder contains working examples with detailed explanations and real-world use cases.
+1. **Start with [Topic-Based Routing](using_wildcards/)** - Master the fundamentals
+   - Learn wildcard value extraction and usage
+   - Understand `$context.vars.{name}` patterns  
+   - Practice with building automation and UNS examples
+
+2. **Advance to [Content-Based Routing](using_set_context_vars/)** - Add business logic
+   - Master setContextVars rule for payload-driven routing
+   - Implement multi-tenant and conditional routing patterns
+   - Build enterprise-grade routing systems with complex logic
+
+3. **Combine Both Approaches** - Handle complex enterprise scenarios
+   - Use topic structure AND payload content for routing decisions
+   - Implement hybrid routing patterns for maximum flexibility
+
+### 💡 **Quick Decision Guide**
+
+**Choose Topic-Based Routing When:**
+- Routing information is **embedded in topic structure**
+- Need **simple, predictable routing** patterns
+- **Legacy system integration** where topic hierarchy matters
+- **Performance is critical** (no payload processing overhead)
+
+**Choose Content-Based Routing When:**
+- Routing depends on **message content** or business rules
+- Need **complex conditional logic** based on data values
+- **Multi-tenant systems** with tenant info in payload
+- **Business process automation** with dynamic routing rules
 
 ## 💡 UNS (Unified Namespace) Implementation Hint
 
@@ -97,4 +143,4 @@ Input:  protocols/+protocol/+device/+datapoint
 Output: UNS/Systems/{protocol}/Devices/{device}/DataPoints/{datapoint}
 ```
 
-**👉 See [wildcards/wildcard-routing.scf.yaml](wildcards/wildcard-routing.scf.yaml) for complete UNS implementation example with ISA-95 compliance.**
+**👉 See [using_wildcards/wildcard-routing.scf.yaml](using_wildcards/wildcard-routing.scf.yaml) for complete UNS implementation example with ISA-95 compliance.**

@@ -1,12 +1,17 @@
-# Parse Rule: Independent Edge Parsing Examples
+# Parse Rules: String and Format Processing
 
-This guide demonstrates parse rules applied directly at endpoint level for edge computing scenarios. Each endpoint example shows data transformation at the source, reducing network traffic and enabling independent operation. Examples progress from basic string parsing to complex multi-protocol data handling.
+**Purpose**: Learn how to extract structured data from strings, binary data, and complex formats  
+**Complexity**: ⭐⭐ Intermediate | **Focus**: Regular expressions and format parsing  
+**Prerequisites**: [Transform Rules](../01_transform/) and basic understanding of data formats
 
-> **Edge Computing Focus**: All examples show parse rules applied directly to endpoints, demonstrating data transformation at the edge before any downstream processing or transmission.
+## What You'll Learn
 
-> **Note on Mappings**: Parse rules can also be used in mappings for downstream processing, but this approach is less common in modern implementations. Edge parsing at endpoints is the recommended approach for better performance and reduced network overhead.
-
-> **Compatibility Note**: Always verify parse rule format support with your specific Connectware version before production use.
+By the end of this tutorial, you'll understand:
+- ✅ **String parsing** with regular expressions and text manipulation
+- ✅ **Binary data processing** for industrial protocols  
+- ✅ **CSV and delimited format** extraction
+- ✅ **Legacy system integration** through format conversion
+- ✅ **Edge computing patterns** with endpoint-level parsing
 
 ## Core Concept: Edge Data Processing
 
