@@ -74,25 +74,6 @@ Secure your Industrial IoT deployments:
 
 **[→ All security examples](./security/)**
 
-## �🚀 Quick Start
-
-1. **Install Cybus Connectware** (requires license):
-   ```bash
-   docker run --rm cybus/connectware-cli --version
-   ```
-
-2. **Deploy an example**:
-   ```bash
-   cd connecting-systems/opcua
-   docker run --rm -v ${PWD}:/workspace cybus/connectware-cli deploy /workspace/opcua-example-commissioning-file.yml
-   ```
-
-3. **Process data**:
-   ```bash
-   cd data-processing/01_transform  
-   docker run --rm -v ${PWD}:/workspace cybus/connectware-cli deploy /workspace/service.scf.yaml
-   ```
-
 ## 📚 Documentation
 
 - **[Cybus Connectware Docs](https://docs.cybus.io/)** - Complete platform documentation
