@@ -1,48 +1,124 @@
 # Array-Based Multi-Topic Mapping
 
-Use array subscriptions when topics have **no common root** or when mixing different endpoint types.
+**Purpose**: Handle multiple topics with completely different structures in a single mapping  
+**Complexity**: ⭐⭐⭐ Intermediate | **Focus**: Array subscriptions, labels, and collect rules  
+**Prerequisites**: Understanding of [Basic Wildcards](../01_basic_wildcards/) and collect rules
+
+## What You'll Learn
+
+By the end of this tutorial, you'll understand:
+- ✅ **When arrays are required** vs when wildcards work
+- ✅ **Label-based organization** for multi-source data
+- ✅ **Collect rule patterns** for data aggregation
+- ✅ **Cross-system integration** techniques
+
+## The Problem: Incompatible Topic Structures
+
+Wildcards work great when topics share a common root:
+```yaml
+# ✅ Wildcards work - same root structure
+building/+floor/+room/temperature
+building/1/office/temperature     # Matches
+building/2/lobby/temperature      # Matches
+```
+
+But what about completely different topic structures?
+```yaml
+# ❌ Wildcards CAN'T handle these - different roots
+factory/machine/pump-001/status       # Factory system
+building/hvac/main/temperature        # Building automation  
+vehicle/truck-005/engine/diagnostics  # Fleet management
+```
+
+**Solution**: Use array subscriptions to handle incompatible structures.
 
 ## When to Use Arrays
 
 ✅ **Use arrays when:**
-- Topics have different roots: `factory/machine`, `car/sensor`, `building/hvac`
-- Mixing different protocols: MQTT topics + OPC UA endpoints
+- Topics have **different roots**: `factory/machine` vs `building/hvac` vs `vehicle/engine`
+- **Mixed protocols**: MQTT topics + OPC UA endpoints + HTTP APIs
+- **Enterprise integration**: Combining disparate business systems
 
 ❌ **Use wildcards instead when:**
-- Topics share common root: `building/floor1/+/temperature`
+- Topics **share common root**: `building/+floor/+room/temperature`
+- **Similar structure**: All topics follow the same pattern
 
-## Array Syntax Examples
+## Step 1: Basic Array Syntax
 
-### Basic Array Syntax
+Start with a simple array of different topics:
+
 ```yaml
 subscribe:
-  - topic: factory/machine-001/status     # Different roots
-  - topic: car/sensor/status
-  - endpoint: !ref opcuaEndpoint          # Mixed with endpoints
-```
-
-### Array with Labels (Recommended)
-```yaml
-subscribe:
-  - topic: factory/machine-001/status
-    label: 'factory_machine'              # Label each source (use valid JSONata identifiers)
-  - topic: car/sensor/status
-    label: 'vehicle_sensor'
-  - endpoint: !ref opcuaEndpoint
-    label: 'cnc_opcua'
-
+  - topic: factory/machine/pump-001/status     # Factory system
+  - topic: building/hvac/main/temperature       # Building automation
+  - topic: vehicle/truck-005/diagnostics        # Fleet management
 rules:
-- collect: {}                             # Very common with arrays
 - transform:
     expression: |
       {
-        "factory_data": $lookup($, 'factory_machine'),    # Access by label using $lookup()
-        "vehicle_data": $lookup($, 'vehicle_sensor'),     # Access by label using $lookup()
-        "cnc_data": $lookup($, 'cnc_opcua')              # Access by label using $lookup()
+        "timestamp": $now(),
+        "data": $,
+        "source": "unknown"    # ❌ Problem: Can't tell which system sent this!
       }
 ```
 
-**Key Point:** With collect rule, labels become cache keys accessible via `$lookup($, 'label_name')` or direct property access if valid JSONata identifiers.
+**Problem**: Without labels, you lose track of which topic sent the data.
+
+## Step 2: Arrays with Labels
+
+Add labels to identify each data source:
+
+```yaml
+subscribe:
+  - topic: factory/machine/pump-001/status
+    label: 'factory_system'              # Label identifies the source
+  - topic: building/hvac/main/temperature  
+    label: 'building_system'
+  - topic: vehicle/truck-005/diagnostics
+    label: 'vehicle_system'
+rules:
+- transform:
+    expression: |
+      {
+        "timestamp": $now(),
+        "data": $,
+        "source_label": $context.label    # ✅ Now you know the source!
+      }
+```
+
+**Each topic triggers separately** - you get one message per input topic.
+
+## Step 3: Arrays with Collect (The Power Pattern)
+
+Use collect rule to aggregate ALL array sources into one payload:
+
+```yaml
+subscribe:
+  - topic: factory/machine/pump-001/status
+    label: 'factory'
+  - topic: building/hvac/main/temperature  
+    label: 'building'
+  - topic: vehicle/truck-005/diagnostics
+    label: 'vehicle'
+rules:
+- collect: {}                             # Collect all labeled sources
+- transform:
+    expression: |
+      {
+        "timestamp": $now(),
+        "factory_data": $lookup($, 'factory'),      # Access by label
+        "building_data": $lookup($, 'building'),    # Access by label  
+        "vehicle_data": $lookup($, 'vehicle'),      # Access by label
+        "all_systems_ok": $lookup($, 'factory').status = "ok" and 
+                         $lookup($, 'building').temp < 25 and
+                         $lookup($, 'vehicle').engine = "running"
+      }
+```
+
+**Key Benefits:**
+- 🔄 **Cross-system analytics**: Compare data from all sources
+- 📊 **Correlated processing**: Make decisions based on multiple systems
+- 🎯 **Single output**: One enriched message instead of separate outputs
 
 ## Core Concept: Array with Labels and Collect
 
