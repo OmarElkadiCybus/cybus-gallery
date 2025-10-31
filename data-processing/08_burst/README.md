@@ -1,32 +1,24 @@
-# Data Processing Rule: burst
+# Burst Rule Tutorial
 
-## Rule Description
-The `burst` rule consolidates multiple incoming messages into a single array message. It operates on an **OR relationship** between two trigger conditions:
-- **maxSize**: Maximum number of messages to collect before bursting
-- **interval**: Maximum time to wait before bursting (in milliseconds)
+> **Purpose**: Batch multiple messages into arrays for efficient bulk processing and reduced network traffic  
+> **Complexity**: ⭐⭐⭐ (Advanced)  
+> **Prerequisites**: [Transform](../01_transform/) and [Collect](../07_collect/) tutorials
 
-**Key Concept**: The burst triggers when **EITHER** condition is met first (whichever comes first).
+## What You'll Learn
 
-## Trigger Logic (OR Relationship)
+The `burst` rule consolidates multiple messages into **single array messages**. Perfect for:
+- 📦 Batching high-frequency sensor data for efficient processing
+- 🚀 Reducing network traffic by 60-80%
+- ⏱️ Time-based data aggregation (every N seconds)
+- 📊 Size-based batching (every N messages)
 
-The burst rule uses **OR logic**, meaning it triggers when the **first condition** is satisfied:
+**Key Concept**: Triggers on **OR logic** - whichever condition is met first.
 
-```
-Burst Triggers = (Message Count ≥ maxSize) || (Time Elapsed ≥ interval)
-```
+## Step-by-Step Examples
 
-### Configuration Options
+### Step 1: Size-Based Batching (High-Frequency Data)
 
-| Configuration | Behavior | Use Case |
-|---------------|----------|----------|
-| **maxSize only** | Burst when N messages collected | High-frequency data with consistent rate |
-| **interval only** | Burst every N milliseconds | Low-frequency data with irregular timing |
-| **Both together** | Burst when EITHER condition met | Variable-frequency data requiring adaptive batching |
-
-## Detailed Examples
-
-### Example 1: Size-Based Bursting (`maxSize` only)
-**Perfect for**: High-frequency sensors with predictable data rates
+**Concept**: Collect exactly N messages, then burst immediately.
 
 ```yaml
 rules:
@@ -34,18 +26,25 @@ rules:
     maxSize: 3  # Burst after collecting exactly 3 messages
 ```
 
-**Behavior**: Accumulates messages until 3 are collected, then immediately publishes the batch.
+**Perfect for**: Fast sensors with predictable data rates (100+ messages/second).
 
-**Timeline Example**:
+**Timeline:**
 ```
-t=0ms:   Message 1 arrives → Buffer: [msg1]
-t=100ms: Message 2 arrives → Buffer: [msg1, msg2]  
-t=200ms: Message 3 arrives → Buffer: [msg1, msg2, msg3] → BURST TRIGGERED!
-t=200ms: Output: [msg1, msg2, msg3]
+t=0ms:   {"value": 23.1, "timestamp": "10:00:00.100Z"}  → Buffer: [msg1]
+t=100ms: {"value": 23.2, "timestamp": "10:00:00.200Z"}  → Buffer: [msg1, msg2]  
+t=200ms: {"value": 23.3, "timestamp": "10:00:00.300Z"}  → BURST! Output:
+[
+  {"value": 23.1, "timestamp": "10:00:00.100Z"},
+  {"value": 23.2, "timestamp": "10:00:00.200Z"},
+  {"value": 23.3, "timestamp": "10:00:00.300Z"}
+]
 ```
 
-### Example 2: Time-Based Bursting (`interval` only)
-**Perfect for**: Sporadic data that needs regular processing
+**Benefits**: Immediate processing once batch is full, perfect for steady streams.
+
+### Step 2: Time-Based Batching (Sporadic Data)
+
+**Concept**: Wait for a time period, then burst whatever messages arrived.
 
 ```yaml
 rules:
@@ -53,72 +52,128 @@ rules:
     interval: 2000  # Burst every 2 seconds
 ```
 
-**Behavior**: Publishes whatever messages have accumulated every 2 seconds.
+**Perfect for**: Irregular data that needs regular processing.
 
-**Timeline Example**:
+**Timeline:**
 ```
-t=0ms:    Message 1 arrives → Buffer: [msg1]
-t=500ms:  Message 2 arrives → Buffer: [msg1, msg2]
-t=2000ms: Timer expires → BURST TRIGGERED!
-t=2000ms: Output: [msg1, msg2] (only 2 messages, but time limit reached)
+t=0ms:    {"value": 1013.2} arrives  → Buffer: [msg1]
+t=500ms:  {"value": 1013.1} arrives  → Buffer: [msg1, msg2]
+t=1200ms: {"value": 1013.0} arrives  → Buffer: [msg1, msg2, msg3]
+t=2000ms: Timer triggers → BURST! Output:
+[
+  {"value": 1013.2},
+  {"value": 1013.1}, 
+  {"value": 1013.0}
+]
+
+t=2000ms: Buffer resets → Buffer: []
 ```
 
-### Example 3: Adaptive Bursting (Both `maxSize` AND `interval`)
-**Perfect for**: Variable-frequency data requiring flexible batching
+**Benefits**: Guarantees regular output even with irregular input timing.
+
+### Step 3: Adaptive Batching (Mixed Traffic)
+
+**Concept**: Use BOTH size AND time limits - whichever comes first triggers the burst.
 
 ```yaml
 rules:
 - burst:
-    maxSize: 5      # Burst when 5 messages collected
-    interval: 3000  # OR burst every 3 seconds (whichever comes first)
+    maxSize: 5      # Burst after 5 messages OR
+    interval: 3000  # Burst after 3 seconds
 ```
 
-**Scenario A - Size Limit Reached First**:
+**Test Case A - High Traffic (size limit hit first):**
 ```
-t=0ms:   Message 1 → Buffer: [msg1]
-t=100ms: Message 2 → Buffer: [msg1, msg2]
-t=200ms: Message 3 → Buffer: [msg1, msg2, msg3]
-t=300ms: Message 4 → Buffer: [msg1, msg2, msg3, msg4]
-t=400ms: Message 5 → Buffer: [msg1, msg2, msg3, msg4, msg5] → SIZE LIMIT REACHED!
-t=400ms: Output: [msg1, msg2, msg3, msg4, msg5]
+5 messages arrive in 1 second → Bursts at 1s with 5 messages
 ```
 
-**Scenario B - Time Limit Reached First**:
+**Test Case B - Low Traffic (time limit hit first):**
 ```
-t=0ms:    Message 1 → Buffer: [msg1]
-t=1000ms: Message 2 → Buffer: [msg1, msg2]
-t=3000ms: Timer expires → TIME LIMIT REACHED!
-t=3000ms: Output: [msg1, msg2] (only 2 messages, but time limit reached)
+2 messages arrive in 3 seconds → Bursts at 3s with 2 messages  
 ```
 
-## Real-World Use Cases
+**Benefits**: Adapts to varying data rates automatically.
 
-### Manufacturing Line Monitoring
+### Step 4: Burst + Transform for Analytics
+
+**Concept**: Process batched data with statistical analysis.
+
 ```yaml
 rules:
 - burst:
-    maxSize: 10     # High production: batch every 10 readings
-    interval: 5000  # Low production: batch every 5 seconds
+    maxSize: 10
+    interval: 5000
+- transform:
+    expression: |
+      {
+        "batch_stats": {
+          "count": $count($),
+          "average_temp": $average($.*.value),
+          "min_temp": $min($.*.value),
+          "max_temp": $max($.*.value),
+          "time_span": $max($.*.timestamp) - $min($.*.timestamp)
+        },
+        "raw_readings": $
+      }
 ```
 
-**High Production Scenario**: Sensors firing rapidly → Size limit triggers frequent small batches
-**Maintenance Period**: Few sensors active → Time limit ensures regular processing
-
-### IoT Sensor Networks
-```yaml
-rules:
-- burst:
-    maxSize: 20     # Peak hours: batch every 20 readings  
-    interval: 30000 # Off-peak: batch every 30 seconds
-```
-
-**Peak Traffic**: Quick batching prevents buffer overflow
-**Low Traffic**: Regular batching ensures timely processing
-
-## Input/Output Examples
-
-### Input Messages (Various Scenarios)
+**Input array:**
 ```json
+[
+  {"value": 22.1, "timestamp": 1730115600100},
+  {"value": 22.3, "timestamp": 1730115600200},
+  {"value": 22.0, "timestamp": 1730115600300}
+]
+```
+
+**Output with analytics:**
+```json
+{
+  "batch_stats": {
+    "count": 3,
+    "average_temp": 22.13,
+    "min_temp": 22.0,
+    "max_temp": 22.3,
+    "time_span": 200
+  },
+  "raw_readings": [...]
+}
+```
+
+## Burst Configuration Patterns
+
+| Pattern | Configuration | Best For | Example Use Case |
+|---------|--------------|----------|------------------|
+| **Size Only** | `maxSize: N` | Steady high-frequency data | Production line sensors |
+| **Time Only** | `interval: N` | Sporadic irregular data | Building occupancy sensors |
+| **Adaptive** | Both parameters | Variable-rate data | IoT sensor networks |
+| **Small Fast** | `maxSize: 5, interval: 1000` | Real-time analytics | Alert systems |
+| **Large Slow** | `maxSize: 100, interval: 60000` | Bulk processing | Data warehousing |
+
+## Real-World Benefits
+
+### 📊 **Performance Improvement**
+- **Before Burst**: Process 1000 individual messages = 1000 operations
+- **After Burst**: Process 10 batches of 100 = 10 operations  
+- **Result**: 99% reduction in processing overhead
+
+### 🚀 **Network Optimization**  
+- **Before**: 100 messages/second = 100 network calls
+- **After**: 10 batches/second = 10 network calls
+- **Result**: 90% reduction in network traffic
+
+## Key Concepts
+
+- 📦 **Message Batching**: Combine multiple individual messages into arrays
+- ⚡ **OR Logic**: Trigger on EITHER size OR time limit (whichever comes first)
+- 🎯 **Efficient Processing**: Reduce overhead through bulk operations
+- ⏰ **Flexible Timing**: Adapt to both high and low traffic scenarios
+
+## Next Steps
+
+- **Combine**: Use with [COV](../06_cov/) to batch only significant changes
+- **Advanced**: Chain with [Collect](../07_collect/) for multi-source batching
+- **Integration**: [Complete Rule Chain Example](../complete_rule_chain_example.scf.yaml)
 # High-frequency sensor data
 {"sensorId": "temp-01", "value": 23.1, "timestamp": "2025-10-29T10:00:00.000Z"}
 {"sensorId": "temp-01", "value": 23.2, "timestamp": "2025-10-29T10:00:00.100Z"}

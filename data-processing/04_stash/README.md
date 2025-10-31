@@ -1,33 +1,24 @@
-# Stash Rule: Simple Examples
+# Stash Rule Tutorial
 
-The `stash` rule stores a copy of your message data that you can access in the **next message**. Think of it as "remember this for later".
+> **Purpose**: Store message data to access it in future messages for trend analysis and comparisons  
+> **Complexity**: ⭐⭐⭐ (Advanced)  
+> **Prerequisites**: [Transform](../01_transform/) tutorial
 
-## What Stash Does
+## What You'll Learn
 
-**Simple Concept**: Save the **ENTIRE payload** from the previous step so you can access it in the next message.
+The `stash` rule is your **memory between messages**. Perfect for:
+- 📈 Trend analysis (comparing current vs previous values)
+- ⚡ Change detection and alerting
+- 🔄 State tracking across message flows
+- 📊 Rate calculations and derivatives
 
-**CRITICAL**: Stash stores the **complete payload** from the step right before it, not individual fields!
+**Key Concept**: Stash stores the **complete payload** from the previous step, not individual fields.
 
-```yaml
-# Step 1: Process current data and access previous COMPLETE payload
-- transform:
-    expression: |
-      {
-        "current": $,                    # Current message
-        "previous": $last("myStash")     # ENTIRE previous payload from stash
-      }
+## Step-by-Step Examples
 
-# Step 2: Store COMPLETE current payload for the next message
-- stash:
-    label: myStash    # Stores the ENTIRE payload from step 1
-```
+### Step 1: Basic Temperature Comparison
 
-**What gets stored**: The complete transformed object `{"current": ..., "previous": ...}`  
-**What you can access**: Any field from that complete object using `$last("myStash").current` or `$last("myStash").previous`
-
-## Basic Example: Temperature Comparison
-
-**What we want**: Compare current temperature with the previous temperature reading.
+**Concept**: Compare current temperature reading with the previous one.
 
 ```yaml
 rules:
@@ -35,175 +26,204 @@ rules:
     expression: |
       {
         "current_temp": $.temperature,
-        "previous_temp": $last("tempHistory").temperature,
-        "change": $.temperature - $last("tempHistory").temperature
+        "previous_temp": $last("tempHistory") ? $last("tempHistory").temperature : null,
+        "change": $last("tempHistory") ? 
+                   $.temperature - $last("tempHistory").temperature : 0,
+        "sensor": $.sensor
       }
 - stash:
-    label: tempHistory    # Store this message for next time
+    label: tempHistory    # Store complete message for next time
 ```
 
-**Flow:**
-1. **Message 1**: `{"temperature": 25}` → No previous data yet
-2. **Message 2**: `{"temperature": 27}` → Can compare with Message 1
-3. **Message 3**: `{"temperature": 24}` → Can compare with Message 2
-
-## Complete Example with Input/Output
-
-**Message Sequence:**
-
-**First Message:**
-- **Input:** `{"temperature": 25, "sensor": "room-01"}`
-- **Previous:** `null` (nothing stashed yet)
-- **Output:** 
-```json
-{
-  "current_temp": 25,
-  "previous_temp": null,
-  "change": null,
-  "sensor": "room-01"
-}
+**Message Flow:**
 ```
-- **Stashed:** `{"temperature": 25, "sensor": "room-01"}`
+Message 1: {"temperature": 25, "sensor": "room-01"}
+→ Output: {"current_temp": 25, "previous_temp": null, "change": 0}
+→ Stashed: {"temperature": 25, "sensor": "room-01"}
 
-**Second Message:**
-- **Input:** `{"temperature": 27, "sensor": "room-01"}`
-- **Previous:** `{"temperature": 25, "sensor": "room-01"}` (from stash)
-- **Output:**
-```json
-{
-  "current_temp": 27,
-  "previous_temp": 25,
-  "change": 2,
-  "sensor": "room-01"
-}
-```
-- **Stashed:** `{"temperature": 27, "sensor": "room-01"}`
+Message 2: {"temperature": 27, "sensor": "room-01"}  
+→ Output: {"current_temp": 27, "previous_temp": 25, "change": 2}
+→ Stashed: {"temperature": 27, "sensor": "room-01"}
 
-**Third Message:**
-- **Input:** `{"temperature": 24, "sensor": "room-01"}`
-- **Previous:** `{"temperature": 27, "sensor": "room-01"}` (from stash)
-- **Output:**
-```json
-{
-  "current_temp": 24,
-  "previous_temp": 27,
-  "change": -3,
-  "sensor": "room-01"
-}
+Message 3: {"temperature": 24, "sensor": "room-01"}
+→ Output: {"current_temp": 24, "previous_temp": 27, "change": -3}
 ```
 
-## Examples Comparison from service.scf.yaml
+### Step 2: Stash Positioning - When Order Matters
 
-The service file contains 5 different stash patterns. Here's how they compare:
+**Option A: Stash First (store raw input)**
+```yaml
+rules:
+- stash:
+    label: rawData        # Store original input first
+- transform:
+    expression: |
+      {
+        "current": $.temperature,
+        "previous": $last("rawData") ? $last("rawData").temperature : null
+      }
+```
 
-### **Stash Positioning Comparison**
+**Option B: Stash Last (store processed result)**
+```yaml
+rules:
+- transform:
+    expression: |
+      {
+        "current": $.temperature,
+        "previous": $last("processed") ? $last("processed").current : null,
+        "sensor": $.sensor
+      }
+- stash:
+    label: processed      # Store processed result
+```
 
-| Example | Stash Position | What Gets Stored | When To Use |
-|---------|---------------|------------------|-------------|
-| **stashFirst** | Before processing | Raw input message | Need original values for comparison |
-| **stashLast** | After processing | Transformed result | Need processed values for comparison |
+**When to use each:**
+- **Stash First**: Need original raw values for comparison
+- **Stash Last**: Need processed/calculated values for comparison
 
-### **Complexity Comparison**
+### Step 3: Multiple Stashes for Complex Analysis
 
-| Example | Complexity | Purpose | Data Flow |
-|---------|-----------|---------|-----------|
-| **simpleComparison** | **Simplest** | Current vs previous value | `input` → `transform+compare` → `stash` |
-| **stashFirst** | **Simple** | Original input comparison | `stash` → `transform+compare` |
-| **stashLast** | **Simple** | Processed result comparison | `transform+compare` → `stash` |
-| **multipleStashes** | **Complex** | Compare both raw AND processed | `stash` → `transform` → `compare both` → `stash` |
-| **perStationCounter** | **Most Complex** | Per-station state tracking | `collect` → `lookup+increment` → `stash` → `format` |
-
-### **Use Case Analysis**
-
-**📊 Simple Data Comparison (simpleComparison, stashFirst, stashLast)**
-- **Goal**: Compare current message with previous message
-- **Pattern**: One stash, simple comparison
-- **Difference**: Only **when** the stash happens (before/after processing)
-
-**🎯 Dual History Tracking (multipleStashes)**
-- **Goal**: Compare both original input AND processed values
-- **Pattern**: Two stashes at different stages
-- **Why needed**: Final output requires both raw and processed history
-
-**🏭 Stateful Processing (perStationCounter)**
-- **Goal**: Maintain separate state per dynamic key (station name)
-- **Pattern**: Collect → Stateful Transform → Stash → Clean Output
-- **Why essential**: No other way to track per-station counters across messages
-
-### **Key Insights**
-
-**🔍 When Position Matters:**
-- **Early stash**: Preserves original input for later comparison
-- **Late stash**: Stores processed result for next message
-
-**📈 Complexity Justified:**
-- **Multiple stashes**: Only when you need BOTH raw AND processed history
-- **Stateful stash**: Only when tracking dynamic per-key state (like counters)
-- **Simple stash**: For basic current vs previous comparisons
-
-**⚡ Performance Considerations:**
-- More stashes = more memory usage
-- Complex expressions = more processing time
-- Stateful patterns = necessary complexity for real-world scenarios
-
-## Key Understanding: Stash Stores ENTIRE Payload
-
-**IMPORTANT**: Each stash stores the **complete payload** from the previous step, not individual fields!
+**Concept**: Track both original input AND processed values across messages.
 
 ```yaml
-# CORRECT: One stash stores the entire transformed object
+rules:
+# Step 1: Store original input
 - stash:
-    label: myData    # Stores the COMPLETE payload from previous step
+    label: original
+    
+# Step 2: Process the data  
+- transform:
+    expression: |
+      {
+        "doubled_value": $.reading * 2,
+        "sensor_name": $.sensor_id,
+        "processing_time": $now()
+      }
 
-# WRONG: You cannot stash individual fields separately
+# Step 3: Compare both raw and processed history
+- transform:
+    expression: |
+      {
+        "current": {
+          "raw_reading": $.reading,
+          "processed_value": $.doubled_value,
+          "sensor": $.sensor_name
+        },
+        "previous": {
+          "raw_reading": $last("original") ? $last("original").reading : null,
+          "processed_value": $last("processed") ? $last("processed").doubled_value : null
+        },
+        "comparison": {
+          "raw_change": $last("original") ? 
+                        $.reading - $last("original").reading : 0,
+          "processed_change": $last("processed") ? 
+                              $.doubled_value - $last("processed").doubled_value : 0
+        }
+      }
+
+# Step 4: Store processed result for next message
 - stash:
-    label: temperature    # This doesn't store just temperature!
-- stash:
-    label: pressure       # This doesn't store just pressure!
+    label: processed
 ```
 
-## Common Use Cases
+**Test with:**
+```json
+Message 1: {"reading": 10, "sensor_id": "S1"}
+Message 2: {"reading": 15, "sensor_id": "S1"}
+```
 
-1. **Trend Detection**: Compare current vs previous values
-2. **Change Alerts**: Trigger alerts when values change significantly  
-3. **Data Validation**: Check if new data makes sense compared to previous
-4. **Rate Calculations**: Calculate speed, acceleration, etc.
-5. **State Tracking**: Remember previous state to detect transitions
+**Message 2 output:**
+```json
+{
+  "current": {"raw_reading": 15, "processed_value": 30, "sensor": "S1"},
+  "previous": {"raw_reading": 10, "processed_value": 20},
+  "comparison": {"raw_change": 5, "processed_change": 10}
+}
+```
 
-## When Multiple Stashes Are Actually Needed
+### Step 4: Advanced Pattern - Stateful Counter
 
-Based on the service examples, you need multiple stashes when:
+**Concept**: Track per-device counters that persist across messages (from service example).
 
-### **✅ ESSENTIAL: Per-Station Counter**
-- **Why essential**: Must maintain separate counters for each station
-- **Cannot be simplified**: No other way to track per-station state
-- **Real-world use case**: Production line monitoring, multi-device tracking
+```yaml
+# Complex pattern for per-station counting
+# Each station maintains its own counter state
+```
 
-### **✅ USEFUL: Multiple Processing Stages**
-- **Why useful**: Need access to both original AND processed data in final output
-- **Example**: Compare raw sensor reading vs calculated/processed value
-- **Use case**: Data validation, change analysis across processing stages
+*Note: This advanced pattern combines stash with collect and complex JSONata for production scenarios.*
 
-### **⚠️ ORDER MATTERS: Different Stash Positions**
-- **Stash First**: Store original input before any processing
-- **Stash Last**: Store final processed result
-- **Multiple Stashes**: Store data at different stages
+## Understanding Stash Storage
 
-### **❌ NOT NEEDED: Simple Current vs Previous**
-- **Single stash is enough**: Just comparing current message with previous message
-- **Direct field access**: Can access `$.temperature`, `$.pressure` etc. directly
-- **No extra complexity needed**: One stash + direct current access works fine
+**CRITICAL**: Stash stores the **entire payload** from the previous rule step!
 
-## Key Points
+```yaml
+# What actually gets stashed:
+- transform:
+    expression: |
+      {
+        "temperature": $.temp,
+        "humidity": $.humidity,
+        "calculated_feels_like": $.temp + ($.humidity * 0.1)
+      }
+- stash:
+    label: myData    # Stores the COMPLETE object above
+```
 
-- ✅ **Memory Between Messages**: Access previous message data
-- ✅ **Simple Comparisons**: Compare current vs previous values
-- ✅ **Order Flexibility**: Stash at different stages of processing
-- ✅ **Multiple Labels**: Store different data with different labels
+**Accessing stashed data:**
+```yaml
+# You can access any field from the complete stashed object:
+$last("myData").temperature          # 25
+$last("myData").humidity             # 60  
+$last("myData").calculated_feels_like # 31
+```
 
-## Important Notes
+## Real-World Use Cases
 
-- **First Message**: `$last("label")` returns `null` for the first message
-- **Per Topic**: Each topic has its own stash storage
-- **Labels**: Use descriptive labels to identify different stashes
-- **Order Matters**: Different positions store different data
+### 🔥 **Alert on Significant Changes**
+```yaml
+- transform:
+    expression: |
+      $last("tempHistory") and 
+      ($abs($.temperature - $last("tempHistory").temperature) > 5) ?
+      {
+        "alert": "Temperature spike detected!",
+        "current": $.temperature,
+        "previous": $last("tempHistory").temperature,
+        "change": $.temperature - $last("tempHistory").temperature
+      } : null
+```
+
+### 📈 **Calculate Rates**
+```yaml
+- transform:
+    expression: |
+      $last("speedHistory") ?
+      {
+        "speed": $.distance,
+        "acceleration": ($.distance - $last("speedHistory").distance) / 
+                       ($.timestamp - $last("speedHistory").timestamp)
+      } : {"speed": $.distance, "acceleration": 0}
+```
+
+## Stash Patterns Comparison
+
+| Pattern | Complexity | Use Case | When to Choose |
+|---------|-----------|----------|---------------|
+| **Single Stash** | ⭐⭐ | Compare current vs previous | Simple trend analysis |
+| **Stash First** | ⭐⭐ | Need raw input history | Original data comparison |  
+| **Stash Last** | ⭐⭐ | Need processed result history | Calculated value trends |
+| **Multiple Stashes** | ⭐⭐⭐ | Need BOTH raw AND processed | Complex analysis scenarios |
+
+## Key Concepts
+
+- 🧠 **Memory Between Messages**: Access data from previous messages
+- 📦 **Complete Payload Storage**: Entire rule step output gets stored
+- 🔄 **Per-Topic Storage**: Each subscription topic has separate stash storage
+- ⏰ **First Message**: `$last("label")` returns `null` for first message
+
+## Next Steps
+
+- **Combine**: Use with [SetContextVars](../05_setContextVars/) for dynamic routing
+- **Advanced**: Try [Collect](../07_collect/) for gathering multiple values
+- **Integration**: [Complete Rule Chain Example](../complete_rule_chain_example.scf.yaml)
