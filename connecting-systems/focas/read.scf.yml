@@ -1,0 +1,42 @@
+description: >
+  Connect to FANUC CNC machines using FOCAS protocol to read spindle speed.
+  Example demonstrates reading PMC data and machine status information.
+
+metadata:
+  name: FOCAS Read Example
+  provider: cybus
+  homepage: https://www.cybus.io
+  version: 1.0.0
+
+parameters:
+  focasHost:
+    type: string
+    default: 192.168.2.170
+
+  focasPort:
+    type: integer
+    default: 8193
+
+resources:
+  focasConnection:
+    type: Cybus::Connection
+    properties:
+      protocol: Focas
+      connection:
+        host: !ref focasHost
+        port: !ref focasPort
+
+  actualSpindleSpeed:
+    type: Cybus::Endpoint
+    properties:
+      protocol: Focas
+      connection: !ref focasConnection
+      subscribe:
+        method: 'pmc_rdpmcrng'
+        interval: 5000
+        # F040
+        addressType: 1
+        dataType: 1
+        addressStart: 40
+        addressEnd: 41
+        dataLength: 10

@@ -1,0 +1,94 @@
+
+# -----------------------------------------------------------------------------
+# Service YAML
+# Guide: How to connect an OPC UA server
+# -----------------------------------------------------------------------------
+
+description: >
+
+  OPC UA Example Service
+  Cybus Knowledge Base - How to connect an OPC UA server
+
+metadata:
+
+  name: OPC UA Example Service
+
+parameters:
+
+  opcuaHost:
+    type: string
+    description: OPC UA Host Address
+    default: opcuaserver.com
+
+  opcuaPort:
+    type: integer
+    description: OPC UA Host Port
+    default: 48010
+
+resources:
+
+  opcuaConnection:
+    type: Cybus::Connection
+    properties:
+      protocol: Opcua
+      connection:
+        host: !ref opcuaHost
+        port: !ref opcuaPort
+        #username: myUsername
+        #password: myPassword
+
+  currentTime:
+    type: Cybus::Endpoint
+    properties:
+      protocol: Opcua
+      connection: !ref opcuaConnection
+      topic: server/status/currenttime
+      subscribe:
+        nodeId: i=2258
+
+  Humidity:
+    type: Cybus::Endpoint
+    properties:
+      protocol: Opcua
+      connection: !ref opcuaConnection
+      topic: building-automation/airconditioner/1/humidity
+      subscribe:
+        nodeId: ns=3;s=AirConditioner_1.Humidity
+        #browsePath: /0:Objects/3:BuildingAutomation/3:AirConditioner_1/3:Humidity
+        
+  PowerConsumption:
+    type: Cybus::Endpoint
+    properties:
+      protocol: Opcua
+      connection: !ref opcuaConnection
+      topic: building-automation/airconditioner/1/power-consumption
+      subscribe:
+        nodeId: ns=3;s=AirConditioner_1.PowerConsumption
+        
+  Temperature:
+    type: Cybus::Endpoint
+    properties:
+      protocol: Opcua
+      connection: !ref opcuaConnection
+      topic: building-automation/airconditioner/1/temperature
+      subscribe:
+        nodeId: ns=3;s=AirConditioner_1.Temperature
+        
+  TemperatureSetpointSub:
+    type: Cybus::Endpoint
+    properties:
+      protocol: Opcua
+      connection: !ref opcuaConnection
+      topic: building-automation/airconditioner/1/temperature-setpoint
+      subscribe:
+        nodeId: ns=3;s=AirConditioner_1.TemperatureSetPoint
+
+  TemperatureSetpointWrite:
+    type: Cybus::Endpoint
+    properties:
+      protocol: Opcua
+      connection: !ref opcuaConnection
+      topic: building-automation/airconditioner/1/temperature-setpoint
+      write:
+        nodeId: ns=3;s=AirConditioner_1.TemperatureSetPoint
+        #browsePath: /0:Objects/3:BuildingAutomation/3:AirConditioner_1/3:TemperatureSetPoint

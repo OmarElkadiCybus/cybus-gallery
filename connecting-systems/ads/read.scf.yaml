@@ -1,0 +1,58 @@
+description: >
+    Sample ADS service commissioning file
+
+metadata:
+    name: Sample ADS service
+    icon: https://www.cybus.io/wp-content/uploads/2017/10/for-whom1.svg
+    provider: cybus
+    homepage: https://www.cybus.io
+    version: 1.0.0
+
+parameters:
+    adsLocalNetId:
+        type: string
+        description: The local address of the client (local AMS NetId)
+        default: 192.168.7.12.1.1
+    adsLocalPort:
+        type: integer
+        description: The local TCP port used to communicate to the device
+        default: 32000
+    adsHost:
+        type: string
+        description: The device address (IP address or hostname) of the ADS router
+        default: 192.168.2.170
+    adsRouterTcpPort:
+        type: integer
+        description: This is the TCP port of the ADS router
+        default: 48898
+    adsPort:
+        type: integer
+        description: AMS Port of the ADS device. This is not the TCP port used but the setting usually known as PortNr.; the actual TCP port is adsRouterTcpPort
+        default: 851
+    adsNetId:
+        type: string
+        description: AMS Net ID of the ADS device.
+        default: 192.168.2.170.1.1
+
+resources:
+    adsConnection:
+        type: Cybus::Connection
+        properties:
+            protocol: Ads
+            connection:
+                localAddress: !ref adsLocalNetId # The local NetId of the client.
+                localPort: !ref adsLocalPort
+                host: !ref adsHost
+                routerTcpPort: !ref adsRouterTcpPort
+                port: !ref adsPort # This is not the TCP used but the setting usually known as PortNr.
+                netId: !ref adsNetId # The device NetId
+
+    adsQuery1:
+        type: Cybus::Endpoint
+        properties:
+            protocol: Ads
+            connection: !ref adsConnection
+            subscribe:
+                symbolName: "MAIN.byByte[4]"
+                dataType: "int8"
+                interval: 1000

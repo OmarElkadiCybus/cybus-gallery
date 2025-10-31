@@ -1,0 +1,49 @@
+description: >
+  Connect to Allen-Bradley PLCs using EtherNet/IP protocol.
+  Example demonstrates reading, writing, and subscribing to PLC tags.
+
+metadata:
+  name: EtherNet/IP Read/Write Example
+  provider: cybus
+  homepage: https://www.cybus.io
+  version: 1.0.0
+
+parameters:
+  host:
+    type: string
+    default: 192.168.10.99
+resources:
+  ethernetIpConnection:
+    type: Cybus::Connection
+    properties:
+      protocol: EthernetIp
+      connection:
+        host: !ref host
+        
+  sampleSubscription:
+    type: Cybus::Endpoint
+    properties:
+      protocol: EthernetIp
+      connection: !ref ethernetIpConnection
+      subscribe:
+        tagName: dn_array[0]
+        programName: Null
+
+  sampleRead:
+    type: Cybus::Endpoint
+    properties:
+      protocol: EthernetIp
+      connection: !ref ethernetIpConnection
+      read:
+        tagName: dn_count
+        programName: SimulationMain
+
+  sampleWrite:
+    type: Cybus::Endpoint
+    properties:
+      protocol: EthernetIp
+      connection: !ref ethernetIpConnection
+      write:
+        tagName: dn_count
+        programName: SimulationMain
+        tagType: DINT

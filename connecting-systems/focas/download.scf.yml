@@ -1,0 +1,35 @@
+description: >
+  Download programs to FANUC CNC machines using FOCAS protocol.
+  Example demonstrates writing program data directly to CNC memory.
+
+metadata:
+  name: FOCAS Program Download Example
+  provider: cybus
+  homepage: https://www.cybus.io
+  version: 1.0.0
+
+parameters:
+  focasHost:
+    type: string
+    default: 192.168.2.170
+
+  focasPort:
+    type: integer
+    default: 8193
+
+resources:
+  focasConnection:
+    type: Cybus::Connection
+    properties:
+      protocol: Focas
+      connection:
+        host: !ref focasHost
+        port: !ref focasPort
+
+  programDownload:
+    type: Cybus::Endpoint
+    properties:
+      protocol: Focas
+      connection: !ref focasConnection
+      read:
+        method: 'program_download'
