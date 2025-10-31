@@ -26,26 +26,34 @@ Connect industrial devices, transform data, and monitor your systems with proven
 
 **Security & Management**:
 - **[TLS Certificates](./connecting-systems/mqtt-tls-certificates/)** - Secure MQTT connections
-- **[User Management](./connecting-systems/user-management/)** - Access control setup
 
 **[→ All connection examples](./connecting-systems/)**
 
 ## 🔄 Data Processing
 
-**Core Processing Rules**:
+**Essential Processing Rules**:
 - **[Transform](./data-processing/01_transform/)** - Convert JSON data with JSONata
 - **[Filter](./data-processing/02_filter/)** - Conditional data processing
+- **[Parse](./data-processing/03_parse/)** - Extract data from strings and formats
 - **[COV (Change of Value)](./data-processing/06_cov/)** - Publish only on changes
 - **[Collect](./data-processing/07_collect/)** - Aggregate multiple data sources
 
-**Advanced Patterns**:
-- **[Array Processing](./data-processing/01_array/)** - Handle multi-device data
-- **[Wildcard Topics](./data-processing/02_wildcards/)** - Dynamic topic matching  
-- **[Stash & Context](./data-processing/04_stash/)** - State management
-- **[Dynamic Publishing](./data-processing/04_dynamic_publish_topic/)** - Content-based routing
-- **[Burst Detection](./data-processing/08_burst/)** - High-frequency event handling
+**Advanced Processing**:
+- **[Stash](./data-processing/04_stash/)** - State management between messages
+- **[SetContextVars](./data-processing/05_setContextVars/)** - Dynamic variable extraction
+- **[Burst](./data-processing/08_burst/)** - Message batching and splitting
 
 **[→ All data processing examples](./data-processing/)**
+
+## 📡 Advanced Mapping
+
+**Enterprise Mapping Patterns**:
+- **[Basic Wildcards](./advanced-mapping/01_basic_wildcards/)** - Dynamic topic matching
+- **[Array Mapping](./advanced-mapping/02_array/)** - Multi-source integration
+- **[Wildcards with Collect](./advanced-mapping/03_wildcards_with_collect/)** - Advanced aggregation
+- **[Dynamic Routing](./advanced-mapping/04_dynamic_publish_topic/)** - Content-based routing
+
+**[→ All advanced mapping examples](./advanced-mapping/)**
 
 ## 📊 Monitoring
 
@@ -57,7 +65,16 @@ Monitor and visualize your Industrial IoT data:
 
 **[→ All monitoring examples](./monitoring/)**
 
-## 🚀 Quick Start
+## � Security
+
+Secure your Industrial IoT deployments:
+
+- **[Client Certificates](./security/client-certificates-for-mqtt-over-tls/)** - MQTT TLS authentication
+- **[User Management](./security/user-management/)** - Access control and permissions
+
+**[→ All security examples](./security/)**
+
+## �🚀 Quick Start
 
 1. **Install Cybus Connectware** (requires license):
    ```bash
@@ -73,7 +90,7 @@ Monitor and visualize your Industrial IoT data:
 3. **Process data**:
    ```bash
    cd data-processing/01_transform  
-   docker run --rm -v ${PWD}:/workspace cybus/connectware-cli deploy /workspace/machine-monitoring.scf.yaml
+   docker run --rm -v ${PWD}:/workspace cybus/connectware-cli deploy /workspace/service.scf.yaml
    ```
 
 ## 📚 Documentation
