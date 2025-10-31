@@ -81,31 +81,8 @@ Secure your Industrial IoT deployments:
 - **[Service Configuration](https://docs.cybus.io/documentation/services)** - SCF file reference
 - **[Data Processing](https://docs.cybus.io/documentation/services/data-processing-rules)** - Processing rules guide
 
-## 🎯 Use Cases
-
-**Manufacturing**: Connect PLCs, robots, and machines for real-time monitoring  
-**Energy**: Integrate SCADA systems with cloud analytics  
-**Building Automation**: BACnet integration with modern dashboards  
-**Automotive**: CNC machine data collection and quality control
-
-## 🤝 Contributing
-
-1. Fork this repository
-2. Create examples following our standardized template structure
-3. Test with real devices where possible
-4. Submit pull request with clear documentation
-
 ## 📞 Support
 
 - **Documentation**: [docs.cybus.io](https://docs.cybus.io/)
 - **Support Portal**: [support.cybus.io](https://support.cybus.io/)
 - **Professional Services**: Contact [Cybus](https://www.cybus.io/) for implementation support
-
-## 📜 License
-
-MIT License - see [LICENSE](LICENSE) file for details.
-
----
-
-**🏭 Industrial IoT Integration Made Simple**  
-*Powered by [Cybus Connectware](https://www.cybus.io/)*
