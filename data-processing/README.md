@@ -16,10 +16,7 @@ Transform, filter, and route your industrial data with Cybus Connectware.
 - **[Complete Rule Chain](./complete_rule_chain_example.scf.yaml)** - See all rules working together
 
 ### Advanced Patterns
-- **[Array Mapping](./01_array/)** - Handle arrays of topics and data
-- **[Wildcard Patterns](./02_wildcards/)** - Dynamic topic discovery and routing
-- **[Advanced Collection](./03_wildcards_with_collect/)** - Combine wildcards with data aggregation
-- **[Dynamic Routing](./04_dynamic_publish_topic/)** - Context-based message routing
+For advanced mapping patterns including arrays, wildcards, and dynamic routing, see the **[Advanced Mapping Examples](../advanced-mapping/)** section.
 
 ## Need Help?
 
