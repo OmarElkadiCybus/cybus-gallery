@@ -1,7 +1,8 @@
 # Dynamic Publish Topics with SetContextVars
 
-**Purpose**: Use payload data to construct dynamic publish topics using the setContextVars rule
-**Key Technique**: `setContextVars` rule + `$context.vars.{name}` in publish topic
+**Purpose**: Use payload data to construct dynamic publish topics using the setContextVars rule  
+**Complexity**: ⭐⭐⭐ Advanced | **Focus**: Content-based routing with business logic  
+**Prerequisites**: Understanding of JSONata expressions and conditional logic
 
 ## How SetContextVars Dynamic Publishing Works
 

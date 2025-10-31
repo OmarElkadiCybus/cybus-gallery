@@ -1,7 +1,8 @@
 # Dynamic Publish Topics with Wildcards
 
-**Purpose**: Use wildcard segments from input topics to construct dynamic publish topics
-**Key Technique**: `$context.vars.{name}` in publish topic expressions
+**Purpose**: Use wildcard segments from input topics to construct dynamic publish topics  
+**Complexity**: ⭐⭐ Intermediate | **Focus**: Topic-based routing with wildcard values  
+**Prerequisites**: [Basic Wildcards](../../01_basic_wildcards/) understanding
 
 ## How Wildcard Dynamic Publishing Works
 

@@ -1,14 +1,32 @@
 # Dynamic Publish Topics
 
-**Purpose**: Learn how to create dynamic publish topics using data from input topics names and payloads
-**Key Concepts**: Wildcard variables, setContextVars rule, dynamic topic construction
+**Purpose**: Learn how to create dynamic publish topics using data from input topic names and payloads  
+**Complexity**: ⭐⭐⭐ Advanced | **Focus**: Context-based routing and topic construction  
+**Prerequisites**: [Basic Wildcards](../01_basic_wildcards/), [Array Mapping](../02_array/), and JSONata expressions
 
-## Overview
+## What You'll Learn
 
-Dynamic publish topics allow you to create output topics that are constructed from:
-- **Wildcard segments** from the input topic pattern
-- **Payload data** using the setContextVars rule
-- **Combinations** of both approaches for complex routing
+By the end of this section, you'll master:
+- ✅ **Wildcard-based routing** using topic segments for output construction  
+- ✅ **Payload-based routing** using setContextVars for content-driven destinations
+- ✅ **Multi-tenant architectures** with dynamic topic separation
+- ✅ **UNS implementation** for enterprise namespace standardization
+
+## The Challenge: Smart Message Routing
+
+Static publish topics work for simple cases:
+```yaml
+# ❌ Static routing - not flexible
+publish:
+  topic: alerts/temperature/high    # Always goes to the same place
+```
+
+But what about dynamic scenarios where routing depends on:
+- **Topic content**: Route `sensors/kitchen/temp` → `alerts/kitchen/temperature`  
+- **Payload data**: Route based on `{"tenant": "acme", "priority": "high"}`
+- **Business logic**: Different destinations based on data values or topic structure
+
+**Solution**: Dynamic publish topics that construct destinations from context and data.
 
 ## When to Use Dynamic Publish Topics
 

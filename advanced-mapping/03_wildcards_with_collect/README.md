@@ -1,11 +1,25 @@
 # Wildcards with Collect Rules - Advanced Aggregation
 
-**Purpose**: Master wildcard-based data collection with collect rules for enterprise-scale analytics and cross-correlation
-**Complexity**: ⭐⭐⭐ Advanced | **Focus**: Dynamic labels and multi-pattern aggregation
+**Purpose**: Master wildcard-based data collection with collect rules for enterprise-scale analytics and cross-correlation  
+**Complexity**: ⭐⭐⭐ Advanced | **Focus**: Dynamic labels and multi-pattern aggregation  
+**Prerequisites**: [Basic Wildcards](../01_basic_wildcards/) and [Array Mapping](../02_array/) concepts
 
-## Overview
+## What You'll Learn
 
-This section teaches you how to combine **wildcard patterns** with **collect rules** to build sophisticated data aggregation systems. You'll learn why dynamic labels are critical for preventing data loss and how to implement enterprise-grade analytics patterns.
+By the end of this section, you'll master:
+- ✅ **Wildcard + Collect combination** for advanced data aggregation
+- ✅ **Dynamic label strategies** to prevent data loss and enable analytics
+- ✅ **Cross-correlation patterns** for enterprise-scale monitoring systems
+- ✅ **Performance optimization** for large-scale topic aggregation
+
+## The Challenge: Aggregating Dynamic Topic Data
+
+You've learned wildcards for dynamic topics and arrays for different structures. Now combine both techniques to build powerful aggregation systems that can:
+
+- **Collect data** from multiple wildcard-matching topics
+- **Correlate information** across different topic patterns  
+- **Build analytics** that span entire enterprise systems
+- **Scale efficiently** with proper dynamic labeling
 
 ## Core Concepts
 
