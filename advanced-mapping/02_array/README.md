@@ -1,7 +1,7 @@
 # Array-Based Multi-Topic Mapping
 
 **Purpose**: Handle multiple topics with completely different structures in a single mapping  
-**Complexity**: ⭐⭐⭐ Intermediate | **Focus**: Array subscriptions, labels, and collect rules  
+**Focus**: Array subscriptions, labels, and collect rules  
 **Prerequisites**: Understanding of [Basic Wildcards](../01_basic_wildcards/) and collect rules
 
 ## What You'll Learn

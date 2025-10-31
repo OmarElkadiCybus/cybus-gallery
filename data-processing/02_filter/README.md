@@ -1,10 +1,9 @@
 # Filter Rules: Conditional Message Processing
 
-**Purpose**: Learn how to conditionally process messages using filter rules  
-**Complexity**: ⭐ Beginner | **Focus**: Boolean logic and conditional routing  
-**Prerequisites**: Basic JSONata expressions and JSON data understanding
+# Filter Rule Tutorial
 
-## What You'll Learn
+> **Purpose**: Route messages based on conditions and filter unwanted data  
+> **Prerequisites**: [Transform](../01_transform/) tutorial## What You'll Learn
 
 By the end of this tutorial, you'll understand:
 - ✅ **Basic filtering** by field values and conditions

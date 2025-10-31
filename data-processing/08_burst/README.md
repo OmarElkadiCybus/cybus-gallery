@@ -1,7 +1,6 @@
 # Burst Rule Tutorial
 
 > **Purpose**: Batch multiple messages into arrays for efficient bulk processing and reduced network traffic  
-> **Complexity**: ⭐⭐⭐ (Advanced)  
 > **Prerequisites**: [Transform](../01_transform/) and [Collect](../07_collect/) tutorials
 
 ## What You'll Learn

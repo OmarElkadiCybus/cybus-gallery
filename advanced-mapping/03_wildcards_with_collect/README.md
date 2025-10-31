@@ -1,7 +1,7 @@
 # Wildcards with Collect Rules - Advanced Aggregation
 
 **Purpose**: Master wildcard-based data collection with collect rules for enterprise-scale analytics and cross-correlation  
-**Complexity**: ⭐⭐⭐ Advanced | **Focus**: Dynamic labels and multi-pattern aggregation  
+**Focus**: Dynamic labels and multi-pattern aggregation  
 **Prerequisites**: [Basic Wildcards](../01_basic_wildcards/) and [Array Mapping](../02_array/) concepts
 
 ## What You'll Learn

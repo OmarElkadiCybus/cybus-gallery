@@ -1,7 +1,7 @@
 # Parse Rules: String and Format Processing
 
 **Purpose**: Learn how to extract structured data from strings, binary data, and complex formats  
-**Complexity**: ⭐⭐ Intermediate | **Focus**: Regular expressions and format parsing  
+**Focus**: Regular expressions and format parsing  
 **Prerequisites**: [Transform Rules](../01_transform/) and basic understanding of data formats
 
 ## What You'll Learn

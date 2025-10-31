@@ -1,7 +1,6 @@
 # Collect Rule Tutorial
 
 > **Purpose**: Aggregate multiple data sources into a single message for comprehensive monitoring  
-> **Complexity**: ⭐⭐⭐ (Advanced)  
 > **Prerequisites**: [Transform](../01_transform/), [Filter](../02_filter/), and [SetContextVars](../05_setContextVars/)
 
 ## What You'll Learn

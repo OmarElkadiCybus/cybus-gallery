@@ -1,7 +1,7 @@
 # Dynamic Publish Topics with Wildcards
 
 **Purpose**: Use wildcard segments from input topics to construct dynamic publish topics  
-**Complexity**: ⭐⭐ Intermediate | **Focus**: Topic-based routing with wildcard values  
+**Focus**: Topic-based routing with wildcard values  
 **Prerequisites**: [Basic Wildcards](../../01_basic_wildcards/) understanding
 
 ## What You'll Learn

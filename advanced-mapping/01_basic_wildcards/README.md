@@ -1,7 +1,7 @@
 # Basic Wildcard Patterns
 
 **Purpose**: Learn fundamental wildcard subscription patterns for multi-topic mapping  
-**Complexity**: ⭐⭐ Beginner to Intermediate | **Focus**: Wildcard syntax and context variables  
+**Focus**: Wildcard syntax and context variables  
 **Prerequisites**: Basic understanding of MQTT topics and JSONata expressions
 
 ## What You'll Learn

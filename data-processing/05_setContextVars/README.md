@@ -1,7 +1,6 @@
 # SetContextVars Rule Tutorial
 
 > **Purpose**: Extract values from messages and store them as variables for dynamic routing and processing  
-> **Complexity**: ⭐⭐ (Intermediate)  
 > **Prerequisites**: [Transform](../01_transform/) and [Filter](../02_filter/) tutorials
 
 ## What You'll Learn

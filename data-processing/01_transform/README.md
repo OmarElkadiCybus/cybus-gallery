@@ -1,10 +1,9 @@
 # Transform Rules: Data Conversion & Restructuring
 
-**Purpose**: Learn how to convert, restructure, and enrich data using transform rules  
-**Complexity**: ⭐ Beginner | **Focus**: JSONata expressions and data transformation  
-**Prerequisites**: Basic understanding of JSON data structures
+# Transform Rule Tutorial
 
-## What You'll Learn
+> **Purpose**: Convert and manipulate data formats using JSONata expressions  
+> **Prerequisites**: Basic understanding of JSON data structures## What You'll Learn
 
 By the end of this tutorial, you'll understand:
 - ✅ **Field renaming and mapping** between different data formats

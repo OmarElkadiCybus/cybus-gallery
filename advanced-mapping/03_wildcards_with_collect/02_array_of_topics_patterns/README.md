@@ -1,7 +1,7 @@
 # Array Subscription with Wildcards & Dynamic Labels
 
 - **Specialty**: Handle multiple incompatible topic structures in a single mapping
-- **Complexity Solved**: Wildcard names + dynamic labels manage heterogeneous data streams
+- **Focus**: Wildcard names + dynamic labels manage heterogeneous data streams
 
 ## The Array Subscription Specialty
 

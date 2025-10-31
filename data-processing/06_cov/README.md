@@ -1,7 +1,6 @@
 # COV (Change of Value) Rule Tutorial
 
 > **Purpose**: Filter messages to only pass significant value changes, reducing noise and data traffic  
-> **Complexity**: ⭐⭐ (Intermediate)  
 > **Prerequisites**: [Transform](../01_transform/) and [Filter](../02_filter/) tutorials
 
 ## What You'll Learn

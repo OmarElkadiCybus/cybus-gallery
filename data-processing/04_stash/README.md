@@ -1,7 +1,6 @@
 # Stash Rule Tutorial
 
 > **Purpose**: Store message data to access it in future messages for trend analysis and comparisons  
-> **Complexity**: ⭐⭐⭐ (Advanced)  
 > **Prerequisites**: [Transform](../01_transform/) tutorial
 
 ## What You'll Learn

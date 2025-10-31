@@ -1,7 +1,7 @@
 # Dynamic Publish Topics
 
 **Purpose**: Learn how to create dynamic publish topics using data from input topic names and payloads  
-**Complexity**: ⭐⭐⭐ Advanced | **Focus**: Context-based routing and topic construction  
+**Focus**: Context-based routing and topic construction  
 **Prerequisites**: [Basic Wildcards](../01_basic_wildcards/), [Array Mapping](../02_array/), and JSONata expressions
 
 ## What You'll Learn

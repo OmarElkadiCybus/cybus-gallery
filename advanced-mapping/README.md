@@ -1,7 +1,7 @@
 # Advanced Mapping Patterns
 
 **Purpose**: Master advanced Cybus Connectware mapping techniques for enterprise-scale Industrial IoT systems
-**Complexity**: ⭐⭐⭐ Advanced | **Focus**: Multi-topic patterns, wildcards, and dynamic routing
+**Focus**: Multi-topic patterns, wildcards, and dynamic routing
 
 ## Overview
 
@@ -10,7 +10,7 @@ This section covers sophisticated mapping patterns that go beyond basic single-t
 ## Tutorial Structure
 
 ### 📁 [01_basic_wildcards/](./01_basic_wildcards/) - Fundamental Wildcard Patterns  
-**Complexity**: ⭐⭐ Beginner to Intermediate | **Focus**: Single wildcard patterns with context variables
+**Focus**: Single wildcard patterns with context variables
 
 **What You'll Learn:**
 - **Wildcard syntax**: `+` for single level, `#` for multi-level matching
@@ -26,7 +26,7 @@ This section covers sophisticated mapping patterns that go beyond basic single-t
 ---
 
 ### 📁 [02_array/](./02_array/) - Array-Based Multi-Topic Mapping
-**Complexity**: ⭐⭐⭐ Intermediate | **Focus**: Multiple topics with different roots
+**Focus**: Multiple topics with different roots
 
 **What You'll Learn:**
 - **Array subscriptions** for topics with incompatible structures  
@@ -42,7 +42,7 @@ This section covers sophisticated mapping patterns that go beyond basic single-t
 ---
 
 ### 📁 [03_wildcards_with_collect/](./03_wildcards_with_collect/) - Advanced Aggregation
-**Complexity**: ⭐⭐⭐ Advanced | **Focus**: Wildcard + collect rule combinations
+**Focus**: Wildcard + collect rule combinations
 
 **What You'll Learn:**
 - **Single pattern aggregation**: Collect data from multiple topics matching one pattern
@@ -58,7 +58,7 @@ This section covers sophisticated mapping patterns that go beyond basic single-t
 ---
 
 ### 📁 [04_dynamic_publish_topic/](./04_dynamic_publish_topic/) - Context-Based Routing
-**Complexity**: ⭐⭐⭐ Advanced | **Focus**: Dynamic topic construction and routing
+**Focus**: Dynamic topic construction and routing
 
 **What You'll Learn:**
 - **Wildcard-based routing**: Use topic segments for output topic construction

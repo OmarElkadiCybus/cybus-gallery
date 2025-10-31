@@ -1,7 +1,7 @@
 # Single Wildcard with Collect & Dynamic Labels
 
 **Specialty**: Combine messages from multiple topics matching the same wildcard pattern
-**Complexity Solved**: Dynamic labels prevent data loss when collecting from similar topic structures
+**Focus**: Dynamic labels prevent data loss when collecting from similar topic structures
 
 ## The Single Wildcard Specialty
 
