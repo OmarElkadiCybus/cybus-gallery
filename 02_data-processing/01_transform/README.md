@@ -1,158 +1,103 @@
-# Transform Rules: Data Conversion & Restructuring
+# Transform Rules: Manufacturing Data Processing Examples
 
-# Transform Rule Tutorial
+> **Purpose**: Real-world manufacturing scenarios demonstrating data conversion & restructuring with JSONata expressions  
+> **Focus**: Industrial protocols, equipment monitoring, and production system integration  
+> **Prerequisites**: Basic understanding of JSON and manufacturing data flows
 
-> **Purpose**: Convert and manipulate data formats using JSONata expressions  
-> **Prerequisites**: Basic understanding of JSON data structures## What You'll Learn
+## Manufacturing Transform Examples
 
-By the end of this tutorial, you'll understand:
-- ✅ **Field renaming and mapping** between different data formats
-- ✅ **Mathematical calculations** for unit conversions and derived values  
-- ✅ **Data enrichment** by adding timestamps, metadata, and computed fields
-- ✅ **Conditional logic** for status determination and data validation
-- ✅ **JSONata expressions** for powerful data manipulation
+This section demonstrates transform rules through practical manufacturing scenarios, each with realistic equipment connections and industrial protocols. Every example shows complete data flows from raw sensor input to processed output for specific manufacturing use cases.
 
-## The Problem: Data Format Mismatches
+### 🏭 What You'll Learn
 
-Raw sensor data often doesn't match the format your applications need:
+By working through these manufacturing examples, you'll master:
+- ✅ **Sensor data standardization** for production monitoring systems
+- ✅ **Equipment data enrichment** with maintenance context and validation  
+- ✅ **Multi-unit conversions** for facility management and energy monitoring
+- ✅ **Data restructuring** for MES integration and reporting systems
+- ✅ **Conditional health assessment** for predictive maintenance workflows
+
+### 📊 The Manufacturing Data Challenge
+
+Industrial systems generate diverse data formats that need standardization:
 
 ```json
-// ❌ Raw sensor format (abbreviated field names, missing metadata)
-{"temp": 25, "hum": 60, "id": "sensor-01", "loc": "warehouse"}
+// ❌ Raw OPC UA sensor data (legacy field names, mixed units)
+{"temp_spindle": 65, "vib_x": 2.1, "mode": 1, "hrs": 8420}
 
-// ✅ Required application format (descriptive names, enriched data)
+// ✅ Standardized production monitoring format  
 {
-  "temperature": 25,
-  "humidity": 60, 
-  "device_id": "sensor-01",
-  "location": "warehouse",
-  "timestamp": "2025-10-31T10:30:00Z",
-  "unit": "celsius"
+  "spindle_temperature_celsius": 65,
+  "vibration_x_axis_mm_s": 2.1, 
+  "operational_mode": "automatic",
+  "operating_hours_total": 8420,
+  "equipment_status": "normal",
+  "maintenance_due_hours": 580
 }
 ```
 
-**Solution**: Transform rules reshape data into the exact format you need.
+**Solution**: Manufacturing-focused transform rules convert raw industrial data into standardized formats for enterprise systems.
 
-## Step 1: Basic Field Renaming
+## 📁 Transform Examples by Concept
 
-Start with simple field mapping - the most common transform use case:
+Each example demonstrates a specific transform concept with realistic manufacturing data:
 
-```yaml
-rules:
-- transform:
-    expression: |
-      {
-        "temperature": $.temp,     # Rename temp → temperature
-        "humidity": $.hum,         # Rename hum → humidity  
-        "device_id": $.id,         # Rename id → device_id
-        "location": $.loc          # Rename loc → location
-      }
-```
+### [01_sensor_standardization.scf.yaml](./01_sensor_standardization.scf.yaml) - **Field Renaming**
+**Concept**: Basic field mapping and value conversion
+- **Raw Input**: `{"temp_spindle": 68, "spd": 2100, "mode": 1}`
+- **Transformed**: `{"spindle_temperature": 68, "spindle_speed": 2100, "operational_mode": "automatic"}`
+- **Key Learning**: Field renaming, value mapping, data enrichment
 
-**Example Flow:**
-- **Input**: `{"temp": 25, "hum": 60, "id": "sensor-01", "loc": "warehouse"}`
-- **Output**: `{"temperature": 25, "humidity": 60, "device_id": "sensor-01", "location": "warehouse"}`
+### [02_machine_enrichment.scf.yaml](./02_machine_enrichment.scf.yaml) - **Data Enrichment** 
+**Concept**: Adding metadata, validation, and timestamps
+- **Raw Input**: `[1247, 7850, 68, 1.8]` (Modbus array)
+- **Transformed**: `{"cycle_count": 1247, "temperature_valid": true, "timestamp": 1730529600000}`
+- **Key Learning**: Array indexing, validation logic, metadata addition
 
-## Step 2: Data Enrichment
+### [03_temperature_conversion.scf.yaml](./03_temperature_conversion.scf.yaml) - **Mathematical Calculations**
+**Concept**: Unit conversions and mathematical operations  
+- **Raw Input**: `{"temperature_f": 75.5}`
+- **Transformed**: `{"fahrenheit": 75.5, "celsius": 24.17, "kelvin": 297.32}`
+- **Key Learning**: Math formulas, function usage ($round), boolean evaluation
 
-Add new fields with timestamps, metadata, and computed values:
+### [04_production_restructuring.scf.yaml](./04_production_restructuring.scf.yaml) - **Data Restructuring**
+**Concept**: Converting flat data to hierarchical format
+- **Raw Input**: `{"status": 1, "units_hour": 95, "cnc1_id": "CNC-001"}`  
+- **Transformed**: Nested objects with `line_info`, `production`, `machines` arrays
+- **Key Learning**: Object nesting, array creation, data organization
 
-```yaml
-rules:
-- transform:
-    expression: |
-      {
-        "original_data": $,           # Keep all original data
-        "timestamp": $now(),          # Add current timestamp
-        "source": "sensor-network",   # Add static metadata  
-        "is_valid": $.value > 0,      # Add validation flag
-        "processing_info": {
-          "processor": "cybus-connectware",
-          "version": "1.0"
-        }
-      }
-```
+### [05_equipment_monitoring.scf.yaml](./05_equipment_monitoring.scf.yaml) - **Conditional Logic**
+**Concept**: Complex if/then logic for equipment health assessment
+- **Raw Input**: `{"temperature": 78, "vibration": 3.2}`
+- **Transformed**: Status evaluation with `"temperature_status": "warning", "overall_status": "alert"`  
+- **Key Learning**: Conditional operators, boolean logic, threshold-based alerts
 
-**Example Flow:**
-- **Input**: `{"value": 150, "sensor": "temp-01"}`
-- **Output**: 
-```json
-{
-  "original_data": {"value": 150, "sensor": "temp-01"},
-  "timestamp": 1730203200000,
-  "source": "sensor-network", 
-  "is_valid": true,
-  "processing_info": {"processor": "cybus-connectware", "version": "1.0"}
-}
-```
+### [06_bit_extraction.scf.yaml](./06_bit_extraction.scf.yaml) - **Bit Manipulation**
+**Concept**: Extracting boolean flags from packed PLC status registers
+- **Raw Input**: `[23]` (binary: 00010111) 
+- **Transformed**: `{"conveyor_running": true, "safety_ok": true, "can_operate": true}`
+- **Key Learning**: Bitwise AND operations, binary flag processing
 
-### **2. Temperature Conversion** (`temperature/fahrenheit` → `temperature/converted`)
-```yaml
-# Input: {"temp": 72, "sensor": "room-01"}
-- transform:
-    expression: |
-      {
-        "fahrenheit": $.temp,
-        "celsius": ($.temp - 32) * 5/9,
-        "kelvin": (($.temp - 32) * 5/9) + 273.15,
-        "sensor": $.sensor
-      }
-# Output: {"fahrenheit": 72, "celsius": 22.22, "kelvin": 295.37, "sensor": "room-01"}
-```
+### [07_database_standardization.scf.yaml](./07_database_standardization.scf.yaml) - **Database Integration**
+**Concept**: Normalizing legacy database rows for ERP systems
+- **Raw Input**: `{"ID": 12345, "WO_NUM": 987, "QTY_PROD": "450", "SHIFT": "1"}`
+- **Transformed**: `{"record_id": 12345, "work_order": "WO-000987", "shift_code": "DAY"}`
+- **Key Learning**: Data type conversion, string formatting, field mapping
 
-### **3. Data Enrichment** (`devices/reading` → `devices/enriched`)
-```yaml  
-# Input: {"value": 150, "sensor": "temp-01"}
-- transform:
-    expression: |
-      {
-        "original_data": $,           # Keep all original data
-        "timestamp": $now(),          # Add current time
-        "source": "sensor-network",   # Add static value
-        "is_valid": $.value > 0,      # Add validation
-        "processor": "cybus"          # Add metadata
-      }
-```
+### [08_quality_data_processing.scf.yaml](./08_quality_data_processing.scf.yaml) - **Quality Control**
+**Concept**: Processing inspection measurements with tolerance checking
+- **Raw Input**: `{"diameter": 50.05, "length": 99.8, "roughness": 1.2}`
+- **Transformed**: Pass/fail results with `{"pass_fail": "PASS", "defect_codes": []}`
+- **Key Learning**: Tolerance validation, statistical calculations, quality metrics
 
-### **4. Conditional Status** (`sensors/battery` → `alerts/battery_status`)
-```yaml
-# Input: {"device": "sensor-01", "battery": 85}
-- transform:
-    expression: |
-      {
-        "device_id": $.device,
-        "battery_level": $.battery,
-        "status": $.battery > 80 ? "excellent" : 
-                 $.battery > 50 ? "good" :
-                 $.battery > 20 ? "low" : "critical",
-        "needs_replacement": $.battery < 20,
-        "alert_priority": $.battery < 20 ? "high" : "low"
-      }
-```
+### [09_energy_monitoring.scf.yaml](./09_energy_monitoring.scf.yaml) - **Energy Analytics**
+**Concept**: Power meter data processing and efficiency calculations  
+- **Raw Input**: `[38500, 12300, 42100, 87]` (power readings)
+- **Transformed**: `{"active_power_kw": 38.5, "efficiency_rating": "fair", "cost_per_hour": 4.62}`
+- **Key Learning**: Unit scaling, cost calculations, efficiency analysis
 
-## JSONata Reference
-
-| Operation | Syntax | Example |
-|-----------|--------|---------|
-| **Get field** | `$.field` | `$.temperature` |
-| **Get nested** | `$.field.subfield` | `$.device.name` |
-| **Math** | `$.a + $.b * 2` | `($.temp - 32) * 5/9` |
-| **Conditions** | `condition ? "true" : "false"` | `$.battery > 20 ? "ok" : "low"` |
-| **Timestamp** | `$now()` | `"timestamp": $now()` |
-| **Keep all** | `$` | `"original": $` |
-
-## Testing Your Transforms
-
-**MQTT Commands:**
-```bash
-# Send test data
-mosquitto_pub -h localhost -t "sensors/raw" -m '{"temp": 25, "hum": 60, "id": "sensor-01"}'
-
-# Check transformed output  
-mosquitto_sub -h localhost -t "sensors/renamed"
-```
-
-**Expected Output:**
-```json
-{"temperature": 25, "humidity": 60, "device_id": "sensor-01", "location": "warehouse"}
-```
+### [10_alarm_processing.scf.yaml](./10_alarm_processing.scf.yaml) - **Alarm Management**
+**Concept**: Standardizing alarm messages for maintenance systems
+- **Raw Input**: `{"message": "Motor temperature high", "priority": 2}`
+- **Transformed**: `{"severity": "high", "category": "thermal", "maintenance_action": "within_hour"}`
+- **Key Learning**: Text analysis, priority mapping, alarm categorization
