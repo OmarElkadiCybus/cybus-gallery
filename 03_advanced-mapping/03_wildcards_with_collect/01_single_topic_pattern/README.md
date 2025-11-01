@@ -1,251 +1,272 @@
-# Single Wildcard with Collect & Dynamic Labels
+# Single Topic Pattern with Wildcards and Collect
 
-**Specialty**: Combine messages from multiple topics matching the same wildcard pattern
-**Focus**: Dynamic labels prevent data loss when collecting from similar topic structures
+This section demonstrates using wildcard patterns with collect rules for single topic patterns in manufacturing environments. The wildcard pattern matches multiple topics from different machines, zones, or systems, and the collect rule aggregates data for cross-system analytics.
 
-## The Single Wildcard Specialty
+## Manufacturing Scenarios
 
-**Single wildcard with collect** is the solution when you need to:
-- **Aggregate similar topics** (same structure, different identifiers)
-- **Cross-correlate data** from matching topic patterns
-- **Build analytics** across topic variations
+### 1. Production Analytics (`01_production_analytics.scf.yaml`)
+- **Use Case**: Production line OEE monitoring across multiple lines
+- **Technology**: OPC UA connections to production systems
+- **Pattern**: `production/lines/+line/oee-metrics` with dynamic label `line_{line}`
+- **Focus**: Cross-line performance aggregation and analytics
 
-### ✅ Single Wildcard Solution
+### 2. Quality Monitoring (`02_quality_monitoring.scf.yaml`)
+- **Use Case**: Quality control data collection across inspection zones  
+- **Technology**: OPC UA connections to quality systems
+- **Pattern**: `quality/zones/+zone/inspection-results` with dynamic label `zone_{zone}`
+- **Focus**: Multi-zone quality aggregation and reporting
+
+### 3. Machine Health (`03_machine_health.scf.yaml`)
+- **Use Case**: Equipment health monitoring for predictive maintenance
+- **Technology**: Modbus connections to machine sensors
+- **Pattern**: `machines/health/+machine/sensors` with dynamic label `machine_{machine}`
+- **Focus**: Cross-machine condition monitoring and analytics
+
+## Key Concepts Demonstrated
+
+### Wildcard Pattern with Dynamic Labels
+All scenarios use the same core pattern:
+
 ```yaml
-# This COMBINES all matching topics in one pattern:
 subscribe:
-  topic: sensors/+room/temperature  # Single pattern matches all rooms
-  label: 'room_{room}' # Dynamic label per room
+  topic: ${Cybus::MqttRoot}/pattern/+variable/data
+  label: 'category_{variable}'  # Creates unique storage per variable
 
 rules:
-- collect: {}  # Stores ALL matching topics
-- transform:   # Access to complete dataset when any triggers
+- collect: {}  # Aggregates all matching topics
+- transform:   # Process complete dataset
     expression: |
       {
-        "all_rooms": $,
-        "triggered_by": $context.vars.room
+        "all_data": $,
+        "triggered_by": $context.vars.variable,
+        "item_count": $count($keys($))
       }
 ```
 
-**Complexity Handled:**
-- ✅ **Multiple topics**: lobby, kitchen, office, bedroom sensors
-- ✅ **Same structure**: All topics follow sensors/{room}/temperature pattern  
-- ✅ **Cross-correlation**: Compare and analyze all rooms together
+**Manufacturing Benefits:**
+- ✅ **Multi-system monitoring**: Production lines, quality zones, machines
+- ✅ **Cross-correlation**: Compare performance across similar assets
+- ✅ **Real-time analytics**: Process complete dataset on each update
 
-## How Wildcard Names Solve Aggregation
+## Dynamic Labels for Manufacturing Assets
 
-**Wildcard names** (`{room}`) create **unique cache keys** for each matching topic:
+**Wildcard variables** create **unique cache keys** for each manufacturing asset:
 
-### Problem: Topic Pattern Matching
+### Example: Production Line Monitoring
 ```yaml
-# Single wildcard pattern matches multiple real topics:
-sensors/lobby/temperature     # Room: lobby
-sensors/kitchen/temperature   # Room: kitchen  
-sensors/office/temperature    # Room: office
-sensors/bedroom/temperature   # Room: bedroom
+# Single wildcard pattern matches multiple production lines:
+production/lines/line-a/oee-metrics     # Line: line-a
+production/lines/line-b/oee-metrics     # Line: line-b  
+production/lines/line-c/oee-metrics     # Line: line-c
 ```
 
-### Solution: Dynamic Labels for Unique Storage
+### Dynamic Label Solution
 ```yaml
 subscribe:
-  topic: sensors/+room/temperature
-  label: 'room_{room}'          # Creates unique labels per room
+  topic: ${Cybus::MqttRoot}/production/lines/+line/oee-metrics
+  label: 'line_{line}'          # Creates unique labels per line
 
 # Results in cache keys:
-# room_lobby    → lobby temperature data
-# room_kitchen  → kitchen temperature data  
-# room_office   → office temperature data
-# room_bedroom  → bedroom temperature data
+# line_line-a    → Line A OEE data
+# line_line-b    → Line B OEE data  
+# line_line-c    → Line C OEE data
 ```
 
-**Aggregation Benefits:**
-- 🎯 **Unique identification**: Each room gets its own cache slot
-- 🔄 **Cross-room analysis**: Transform can compare all rooms
-- 📊 **Statistical processing**: Calculate averages, find outliers
+**Manufacturing Benefits:**
+- 🎯 **Asset identification**: Each line/zone/machine gets unique storage
+- 🔄 **Cross-asset analysis**: Compare performance across similar equipment
+- 📊 **KPI calculation**: Real-time OEE, quality rates, utilization metrics
 
-## What is a Collect Rule?
+## Collect Rule for Manufacturing Analytics
 
-A **collect rule** stores the **last received message** from each matching topic in a **key-value cache** using **dynamic labels as keys**. When any new message arrives, the collect rule triggers and provides access to **all cached data** from all matching topics.
+A **collect rule** aggregates the **latest data** from each matching manufacturing asset in a **key-value cache**. When any asset sends new data, the rule triggers and provides **complete visibility** across all monitored assets.
 
 ```yaml
 subscribe:
-  topic: sensors/+room/temperature
-  label: 'room_{room}'
+  topic: ${Cybus::MqttRoot}/production/lines/+line/oee-metrics
+  label: 'line_{line}'
 
 rules:
-- collect: {}  # Stores all matching topic messages
-- transform:   # Triggered on each new message
+- collect: {}  # Stores all production line data
+- transform:   # Triggered on each update
     expression: |
       {
-        "all_rooms": $,           # Access to ALL room data
-        "trigger": $context.vars.room # Which room triggered this transform
+        "all_lines": $,
+        "updated_line": $context.vars.line,
+        "timestamp": $now()
       }
 ```
 
-**Input/Output Example:**
+**Manufacturing Data Flow:**
 ```
-📨 Message 1: sensors/kitchen/temperature → {"value": 22.5, "unit": "celsius"}
-📨 Message 2: sensors/office/temperature → {"value": 24.1, "unit": "celsius"}
-📨 Message 3: sensors/lobby/temperature → {"value": 21.8, "unit": "celsius"}
+📨 Line A: production/lines/line-a/oee-metrics → {"availability": 0.95, "performance": 0.88, "quality": 0.92}
+📨 Line B: production/lines/line-b/oee-metrics → {"availability": 0.87, "performance": 0.91, "quality": 0.89}
+📨 Line C: production/lines/line-c/oee-metrics → {"availability": 0.92, "performance": 0.85, "quality": 0.94}
 
-🗄️ Payload after Collect Rule (before Transform):
+🗄️ Aggregated Data (before Transform):
 {
-  "room_kitchen": {"value": 22.5, "unit": "celsius"},
-  "room_office": {"value": 24.1, "unit": "celsius"}, 
-  "room_lobby": {"value": 21.8, "unit": "celsius"}
+  "line_line-a": {"availability": 0.95, "performance": 0.88, "quality": 0.92},
+  "line_line-b": {"availability": 0.87, "performance": 0.91, "quality": 0.89},
+  "line_line-c": {"availability": 0.92, "performance": 0.85, "quality": 0.94}
 }
 
-✨ Transform Output (triggered by lobby message):
+✨ Analytics Output (triggered by Line C update):
 {
-  "all_rooms": {
-    "room_kitchen": {"value": 22.5, "unit": "celsius"},
-    "room_office": {"value": 24.1, "unit": "celsius"}, 
-    "room_lobby": {"value": 21.8, "unit": "celsius"}
+  "all_lines": {
+    "line_line-a": {"availability": 0.95, "performance": 0.88, "quality": 0.92},
+    "line_line-b": {"availability": 0.87, "performance": 0.91, "quality": 0.89},
+    "line_line-c": {"availability": 0.92, "performance": 0.85, "quality": 0.94}
   },
-  "trigger": "lobby"  // Last room that triggered
+  "updated_line": "line-c",
+  "timestamp": 1730115600000
 }
 ```
 
-## Why Dynamic Labels are Essential
+## Why Dynamic Labels Prevent Data Loss
 
-**The Problem**: Without dynamic labels, data gets overwritten!
+**Critical Issue**: Without dynamic labels, manufacturing data gets overwritten!
 
-### ❌ Static Labels Example - Data Loss Disaster
+### ❌ Static Labels Example - Production Data Loss
 
 ```yaml
 subscribe:
-  topic: sensors/+room/temperature
-  label: 'temperature'  # Same label for ALL rooms!
+  topic: ${Cybus::MqttRoot}/production/lines/+line/oee-metrics
+  label: 'oee_data'  # Same label for ALL lines!
 
 rules:
 - collect: {}
 - transform:
     expression: |
       {
-        "cached_data": $,
-        "message_count": $count($keys($))
+        "production_data": $,
+        "line_count": $count($keys($))
       }
 ```
 
-**Input Messages (Same Pattern, Different Rooms):**
+**Multiple Production Lines Reporting:**
 ```
-📨 sensors/lobby/temperature → {"value": 22.8, "unit": "celsius"}
-📨 sensors/kitchen/temperature → {"value": 26.3, "unit": "celsius"}  
-📨 sensors/office/temperature → {"value": 24.1, "unit": "celsius"}
-📨 sensors/bedroom/temperature → {"value": 21.5, "unit": "celsius"}
+📨 production/lines/line-a/oee-metrics → {"oee": 0.82, "output": 120}
+📨 production/lines/line-b/oee-metrics → {"oee": 0.79, "output": 98}  
+📨 production/lines/line-c/oee-metrics → {"oee": 0.85, "output": 135}
 ```
 
-**❌ Static Labels Result:**
+**❌ Static Labels Result - Data Loss:**
 ```json
 {
-  "cached_data": {
-    "temperature": {"value": 21.5, "unit": "celsius"}  // Only last room!
+  "production_data": {
+    "oee_data": {"oee": 0.85, "output": 135}  // Only Line C data!
   },
-  "message_count": 1  // Lost 3 out of 4 messages! ⚠️
+  "line_count": 1  // Lost Line A & B data! ⚠️
 }
 ```
 
-### ✅ Dynamic Labels Example - All Data Preserved
+### ✅ Dynamic Labels Example - Complete Production Visibility
 
 ```yaml
 subscribe:
-  topic: sensors/+room/temperature
-  label: 'room_{room}'  # Unique label per room
+  topic: ${Cybus::MqttRoot}/production/lines/+line/oee-metrics
+  label: 'line_{line}'  # Unique label per production line
 
 rules:
 - collect: {}
 - transform:
     expression: |
       {
-        "cached_data": $,
-        "message_count": $count($keys($)),
-        "rooms_monitored": $map($keys($), function($k) { $substringAfter($k, 'room_') }),
-        "temperature_analysis": {
-          "average": $average($map($keys($), function($k) { $lookup($, $k).value })),
-          "min": $min($map($keys($), function($k) { $lookup($, $k).value })),
-          "max": $max($map($keys($), function($k) { $lookup($, $k).value }))
+        "production_data": $,
+        "line_count": $count($keys($)),
+        "active_lines": $map($keys($), function($k) { $substringAfter($k, 'line_') }),
+        "performance_summary": {
+          "avg_oee": $average($map($keys($), function($k) { $lookup($, $k).oee })),
+          "total_output": $sum($map($keys($), function($k) { $lookup($, $k).output })),
+          "best_performer": $k_with_max_oee
         }
       }
 ```
 
-**Same Input Messages (Same Pattern, Different Rooms):**
+**Same Production Lines Reporting:**
 ```
-📨 sensors/lobby/temperature → {"value": 22.8, "unit": "celsius"}
-📨 sensors/kitchen/temperature → {"value": 26.3, "unit": "celsius"}  
-📨 sensors/office/temperature → {"value": 24.1, "unit": "celsius"}
-📨 sensors/bedroom/temperature → {"value": 21.5, "unit": "celsius"}
+📨 production/lines/line-a/oee-metrics → {"oee": 0.82, "output": 120}
+📨 production/lines/line-b/oee-metrics → {"oee": 0.79, "output": 98}  
+📨 production/lines/line-c/oee-metrics → {"oee": 0.85, "output": 135}
 ```
 
-**✅ Dynamic Labels Result:**
+**✅ Dynamic Labels Result - Complete Analytics:**
 ```json
 {
-  "cached_data": {
-    "room_lobby": {"value": 22.8, "unit": "celsius"},
-    "room_kitchen": {"value": 26.3, "unit": "celsius"},
-    "room_office": {"value": 24.1, "unit": "celsius"},
-    "room_bedroom": {"value": 21.5, "unit": "celsius"}
+  "production_data": {
+    "line_line-a": {"oee": 0.82, "output": 120},
+    "line_line-b": {"oee": 0.79, "output": 98},
+    "line_line-c": {"oee": 0.85, "output": 135}
   },
-  "message_count": 4,  // All 4 messages preserved! 🎉
-  "rooms_monitored": ["lobby", "kitchen", "office", "bedroom"],
-  "temperature_analysis": {
-    "average": 23.675,
-    "min": 21.5,
-    "max": 26.3
+  "line_count": 3,  // All production lines tracked! 🎉
+  "active_lines": ["line-a", "line-b", "line-c"],
+  "performance_summary": {
+    "avg_oee": 0.82,
+    "total_output": 353,
+    "best_performer": "line-c"
   }
 }
 ```
 
-## Cross-Room Correlation Example
+## Cross-Asset Manufacturing Analytics
 
-**Advanced Use Case**: Building HVAC system monitoring all rooms
+**Advanced Use Case**: Multi-machine condition monitoring for predictive maintenance
 
-### Input Messages
+### Input Messages from Machine Sensors
 ```
-📨 sensors/lobby/temperature → {"value": 22.8, "humidity": 45, "occupancy": 12}
-📨 sensors/kitchen/temperature → {"value": 26.3, "humidity": 60, "occupancy": 3}  
-📨 sensors/office/temperature → {"value": 24.1, "humidity": 40, "occupancy": 8}
-📨 sensors/bedroom/temperature → {"value": 21.5, "humidity": 50, "occupancy": 2}
+📨 machines/health/cnc-001/sensors → [68.5, 2.1, 1850, 1]  // [temp, vibration, speed, status]
+📨 machines/health/cnc-002/sensors → [72.3, 1.8, 2100, 1]  // [temp, vibration, speed, status]  
+📨 machines/health/robot-001/sensors → [45.2, 0.3, 0, 1]   // [temp, vibration, pos, status]
 ```
 
-## Key Technique: $lookup Pattern
+## Key Technique: Manufacturing Data Access Patterns
 
-The `$lookup` pattern is essential for accessing specific room data from the collected cache:
+The `$lookup` pattern enables targeted analysis of specific machines within the complete fleet:
 
 ```javascript
-// Build the dynamic label key for the triggering room
-$trigger := 'room_' & $context.vars.room;  // e.g., 'room_kitchen'
+// Build the dynamic label key for the reporting machine
+$trigger := 'machine_' & $context.vars.machine;  // e.g., 'machine_cnc-001'
 
-// Get the specific data for the triggering room
-$triggerData := $lookup($, $trigger); // kitchen's temperature data
+// Get data for the specific reporting machine
+$reportingMachine := $lookup($, $trigger);
 
-// Access all collected data
-$allData := $; // complete room cache
+// Access complete fleet data
+$allMachines := $; // complete machine health cache
 ```
 
-**Usage Examples:**
+**Manufacturing Analytics Examples:**
 ```javascript
-// Compare trigger room to others
-$triggerTemp := $lookup($, 'room_' & $context.vars.room).value;
-$otherRooms := $filter($keys($), function($k) { $k != 'room_' & $context.vars.room });
+// Compare reporting machine to fleet average
+$reportingTemp := $lookup($, 'machine_' & $context.vars.machine)[0];
+$allTemps := $map($keys($), function($k) { $lookup($, $k)[0] });
+$avgTemp := $average($allTemps);
+$tempDeviation := $reportingTemp - $avgTemp;
 
-// Statistical analysis
-$allTemperatures := *.value;
-$average := $average($allTemperatures);
-$deviation := $triggerTemp - $average;
+// Fleet health assessment
+$healthyMachines := $filter($keys($), function($k) { 
+  $lookup($, $k)[3] = 1  // Status = 1 (healthy)
+});
+$fleetHealth := $count($healthyMachines) / $count($keys($));
 ```
 
-## When to Use Single Wildcard Collection
+## When to Use Single Wildcard Collection in Manufacturing
 
-**Perfect Use Cases:**
-- **Building Systems**: All rooms follow `building/{floor}/{room}/temperature` pattern
-- **Device Fleets**: All devices use `devices/{type}/{id}/status` pattern  
-- **Sensor Networks**: All sensors follow `sensors/{location}/{sensor}/data` pattern
-- **Regional Monitoring**: All regions use `network/{region}/{node}/metrics` pattern
+**Perfect Manufacturing Use Cases:**
+- **Production Lines**: All lines follow `production/lines/{line}/metrics` pattern
+- **Quality Zones**: All zones use `quality/zones/{zone}/results` pattern  
+- **Machine Fleet**: All machines follow `machines/health/{machine}/sensors` pattern
+- **Facility Monitoring**: All areas use `facility/{area}/{system}/status` pattern
 
-**Key Benefits:**
-- **Unified Analysis**: Compare and correlate across all matching topics
-- **Statistical Processing**: Calculate averages, detect outliers, trend analysis
-- **Efficient Caching**: Single pattern, predictable memory usage
-- **Cross-Topic Intelligence**: Rich analytics across the topic set
+**Manufacturing Benefits:**
+- **Real-time KPIs**: Calculate OEE, quality rates, utilization across assets
+- **Comparative Analysis**: Identify best performers and improvement opportunities
+- **Predictive Maintenance**: Detect anomalies across machine fleets
+- **Cross-Asset Intelligence**: Correlation between related manufacturing systems
 
-**Next**: [Array Subscription](../02_array/) for handling multiple incompatible topic structures
+**Key Implementation Points:**
+- Use `${Cybus::MqttRoot}` prefix for internal topic security
+- Keep transformations simple and focused on core aggregation concepts
+- Include realistic manufacturing endpoints (OPC UA, Modbus, HTTP)
+- Provide clear input/output examples for better understanding
+
+**Next**: [Array of Topics Patterns](../02_array_of_topics_patterns/) for handling multiple topic structures

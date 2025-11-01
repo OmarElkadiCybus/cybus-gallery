@@ -134,6 +134,46 @@ topic: building/+floor/+room/+sensor/reading
 topic: building/+a/+b/+c/reading  
 ```
 
+## Important: MQTT Root Prefix
+
+When subscribing to endpoint topics in mappings, **always include the MQTT root prefix**:
+
+```yaml
+subscribe:
+  topic: ${Cybus::MqttRoot}/factory/+line/+machine/status
+```
+
+**Why this matters:**
+- **Security**: Prevents subscribing to unintended external MQTT topics
+- **Isolation**: Ensures you only receive data from your Connectware endpoints  
+- **Best Practice**: Required for production deployments
+
+**Example with prefix:**
+```yaml
+mappings:
+- subscribe:
+    topic: ${Cybus::MqttRoot}/factory/production/+line/sensors/#
+  publish:
+    topic: analytics/sensors
+  rules:
+  - transform:
+      expression: |
+        {
+          "line": $context.vars.line,
+          "sensor_data": $
+        }
+```
+
+**❌ Without prefix (unsafe):**
+```yaml
+topic: factory/+line/status  # Could match external MQTT topics!
+```
+
+**✅ With prefix (secure):**
+```yaml  
+topic: ${Cybus::MqttRoot}/factory/+line/status  # Only your endpoints
+```
+
 ## When to Use Wildcards
 
 **✅ Good for same root path:**
@@ -154,13 +194,37 @@ topic: building/+floor/+room/temperature
 
 | Wildcard | Meaning | Example |
 |----------|---------|---------|
-| `+` | Single level | `factory/+/status` |
-| `#` | Multi-level | `sensors/#` |
+| `+` | Single level | `${Cybus::MqttRoot}/factory/+/status` |
+| `#` | Multi-level | `${Cybus::MqttRoot}/sensors/#` |
 | `+name` | Creates variable | `$context.vars.name` |
+| `${Cybus::MqttRoot}` | Endpoint prefix | Always required for security |
 
-## Real Examples
+## Real Manufacturing Examples
 
-See the [factory-monitoring.scf.yaml](./factory-monitoring.scf.yaml) file for complete working examples.
+This tutorial includes three comprehensive manufacturing scenarios:
+
+### [01_line_monitoring.scf.yaml](./01_line_monitoring.scf.yaml)
+**Production Line Equipment Monitoring**
+- **Scenario**: Monitor CNC machines and robots across production lines
+- **Wildcards**: `factory/production/+line/+machine/status`
+- **Real Equipment**: Mazak CNC, DMG Mori, HAAS machines, KUKA robots
+- **Use Case**: Track machine status, spindle speed, and tool wear across multiple production lines
+
+### [02_sensor_monitoring.scf.yaml](./02_sensor_monitoring.scf.yaml) 
+**Factory-Wide Sensor Networks**
+- **Scenario**: Multi-line temperature, vibration, and pressure monitoring
+- **Wildcards**: `factory/production/+line/sensors/#`
+- **Real Sensors**: Temperature probes, vibration sensors, hydraulic pressure monitors
+- **Use Case**: Detect overheating, excessive vibration, and pressure anomalies across the entire facility
+
+### [03_quality_control.scf.yaml](./03_quality_control.scf.yaml)
+**Quality Assurance Systems**  
+- **Scenario**: Multi-dimensional quality control monitoring
+- **Wildcards**: `quality/stations/+/+/+` (inspection, testing, final-check)
+- **Real Tests**: Dimensional checks, leak tests, visual inspection, functional testing
+- **Use Case**: Aggregate quality metrics and generate comprehensive quality reports
+
+Each example demonstrates progressively complex wildcard patterns with real manufacturing contexts, dummy but realistic OPC UA and Modbus connections, and practical JSONata transformations you'll find in actual industrial deployments.
 
 ## Next Steps
 

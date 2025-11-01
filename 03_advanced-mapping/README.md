@@ -7,6 +7,65 @@
 
 This section covers sophisticated mapping patterns that go beyond basic single-topic transformations. Learn how to handle complex enterprise scenarios involving multiple data sources, dynamic routing, and advanced aggregation patterns.
 
+> **💡 Internal Topics & Security**: When Connectware creates endpoints, it automatically publishes data to internal MQTT topics prefixed with `${Cybus::MqttRoot}`. This prefix ensures data isolation and security between different Connectware services.
+
+### Understanding `${Cybus::MqttRoot}` with Manufacturing Examples
+
+**Why Internal Topics Matter:**
+When you create endpoints (OPC UA, Modbus, HTTP), Connectware publishes their data to internal MQTT topics that are isolated from external MQTT traffic. Your mappings must subscribe to these internal topics to process the endpoint data.
+
+**❌ Wrong - External Topic Pattern:**
+```yaml
+# This WON'T receive data from your endpoints!
+subscribe:
+  topic: production/lines/line-a/status  # Missing ${Cybus::MqttRoot}
+```
+
+**✅ Correct - Internal Topic Pattern:**
+```yaml
+# This WILL receive data from your endpoints
+subscribe:
+  topic: ${Cybus::MqttRoot}/production/lines/line-a/status  # Includes prefix
+```
+
+**Complete Manufacturing Example:**
+```yaml
+resources:
+  # OPC UA Endpoint publishes to internal topic
+  lineAStatusEndpoint:
+    type: Cybus::Endpoint
+    properties:
+      protocol: Opcua
+      connection: !ref opcuaConnection
+      subscribe:
+        nodeId: "ns=2;s=ProductionLine.A.Status"
+      topic: production/lines/line-a/status  # Internal topic (auto-prefixed)
+
+  # Mapping must subscribe to internal topic with prefix
+  productionAnalytics:
+    type: Cybus::Mapping
+    properties:
+      mappings:
+      - subscribe:
+          topic: ${Cybus::MqttRoot}/production/lines/line-a/status  # ✅ Correct
+        publish:
+          topic: analytics/production/line-a/performance  # ✅ External (no prefix)
+        rules:
+        - transform:
+            expression: |
+              {
+                "line_id": "line-a",
+                "oee": $.oee,
+                "timestamp": $now()
+              }
+```
+
+**Key Points:**
+- 🔒 **Endpoints publish internally**: Data goes to `${Cybus::MqttRoot}/your/topic`
+- 📥 **Mappings subscribe internally**: Use `${Cybus::MqttRoot}/your/topic` in subscribe
+- 📤 **Mappings publish externally**: Use `your/topic` (no prefix) in publish
+- 🛡️ **Security isolation**: Internal topics are isolated between services
+
 ## Tutorial Structure
 
 ### 📁 [01_basic_wildcards/](./01_basic_wildcards/) - Fundamental Wildcard Patterns  
@@ -70,6 +129,47 @@ This section covers sophisticated mapping patterns that go beyond basic single-t
 - **Multi-tenant SaaS**: Route by customer and service type
 - **Alert systems**: Route by severity and destination
 - **Legacy modernization**: Transform to ISA-95 compliant hierarchies
+
+## Internal Topics in Advanced Patterns
+
+All advanced mapping patterns demonstrate proper `${Cybus::MqttRoot}` usage:
+
+**🔧 Wildcards with Internal Topics:**
+```yaml
+# Multiple production lines - all use internal topic prefix
+subscribe:
+  topic: ${Cybus::MqttRoot}/production/lines/+line/status
+# Matches: ${Cybus::MqttRoot}/production/lines/line-a/status
+#         ${Cybus::MqttRoot}/production/lines/line-b/status
+```
+
+**🎯 Array Mapping with Mixed Sources:**
+```yaml
+# Different systems - all internal topics
+subscribe:
+  - topic: ${Cybus::MqttRoot}/production/lines/+line/oee     # OPC UA endpoint
+  - topic: ${Cybus::MqttRoot}/quality/zones/+zone/results   # Modbus endpoint  
+  - topic: ${Cybus::MqttRoot}/energy/meters/+meter/usage    # HTTP endpoint
+```
+
+**📊 Collect Rules with Internal Topics:**
+```yaml
+# Aggregation across internal endpoint data
+subscribe:
+  topic: ${Cybus::MqttRoot}/machines/+machine/health
+  label: 'machine_{machine}'
+rules:
+- collect: {}  # Collects all internal machine data
+```
+
+**🚀 Dynamic Routing from Internal to External:**
+```yaml
+# Route from internal endpoint data to external topics
+subscribe:
+  topic: ${Cybus::MqttRoot}/alerts/+department/+priority
+publish:
+  topic: 'notifications/{department}/{priority}/teams'  # External (no prefix)
+```
 
 ## Quick Decision Guide
 

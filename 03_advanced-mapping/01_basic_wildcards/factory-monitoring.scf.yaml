@@ -1,10 +1,10 @@
 description: >
-  Simple factory monitoring with wildcard context variables.
-  Shows accessing wildcard segments through context variables.
-  Demonstrates input messages and expected transform outputs.
+  Simple examples demonstrating basic wildcard patterns.
+  Shows how to use + and # wildcards with context variables.
+  Focus on wildcard syntax, not complex business logic.
 
 metadata:
-  name: Simple Factory Monitoring - Wildcard Context Variables
+  name: Basic Wildcard Examples - Context Variables
 
 resources:
   # Example WITHOUT context variables - shows the basic wildcard approach
@@ -14,7 +14,7 @@ resources:
       mappings:
       - subscribe:
           # Simple wildcard without context variables
-          topic: factory/+/status
+          topic: ${Cybus::MqttRoot}/factory/+/status
         publish:
           topic: factory/monitoring/basic-status
         rules:
@@ -35,9 +35,9 @@ resources:
     properties:
       mappings:
       - subscribe:
-          # Wildcard pattern: factory/production/line-A/+machine/status
-          # Matches: factory/production/line-A/cnc-001/status, factory/production/line-A/cnc-002/status, etc.
-          topic: factory/production/line-A/+machine/status
+          # Wildcard pattern: ${Cybus::MqttRoot}/factory/production/line-A/+machine/status
+          # Matches: ${Cybus::MqttRoot}/factory/production/line-A/cnc-001/status, ${Cybus::MqttRoot}/factory/production/line-A/cnc-002/status, etc.
+          topic: ${Cybus::MqttRoot}/factory/production/line-A/+machine/status
         publish:
           topic: factory/monitoring/line-A-status
         rules:
@@ -45,14 +45,13 @@ resources:
             expression: |
               {
                 "timestamp": $now(),
-                "production_line": "line-A",
-                "machine_id": $context.vars.machine,
+                "machine": $context.vars.machine,
                 "status": $.status,
                 "temperature": $.temperature
               }
     # Example Input:  factory/production/line-A/cnc-001/status → {"status": "running", "temperature": 68.5, "rpm": 1500}
     # Context vars:   $context.vars.machine = "cnc-001"
-    # Example Output: {"timestamp": 1730115600000, "production_line": "line-A", "machine_id": "cnc-001", "status": "running", "temperature": 68.5}
+    # Example Output: {"timestamp": 1730115600000, "machine": "cnc-001", "status": "running", "temperature": 68.5}
 
   # Multi-level wildcard: All sensor data from any production line
   productionSensorMapping:
@@ -60,11 +59,11 @@ resources:
     properties:
       mappings:
       - subscribe:
-          # Multi-level pattern: factory/production/+/sensors/#
-          # Matches: factory/production/line-A/sensors/temperature, 
-          #          factory/production/line-B/sensors/vibration/axis-x,
+          # Multi-level pattern: ${Cybus::MqttRoot}/factory/production/+/sensors/#
+          # Matches: ${Cybus::MqttRoot}/factory/production/line-A/sensors/temperature, 
+          #          ${Cybus::MqttRoot}/factory/production/line-B/sensors/vibration/axis-x,
           #          etc
-          topic: factory/production/+line/sensors/#
+          topic: ${Cybus::MqttRoot}/factory/production/+line/sensors/#
         publish:
           topic: factory/analytics/sensor-data
         rules:
@@ -72,18 +71,17 @@ resources:
             expression: |
               {
                 "timestamp": $now(),
-                "production_line": $context.vars.line,
+                "line": $context.vars.line,
                 "sensor_path": $context.topic,
-                "value": $.value,
-                "unit": $.unit
+                "value": $.value
               }
     # Example Input 1: factory/production/line-B/sensors/temperature → {"value": 72.1, "unit": "celsius"}
     # Context vars:    $context.vars.line = "line-B", $context.topic = "factory/production/line-B/sensors/temperature"
-    # Example Output:  {"timestamp": 1730115600000, "production_line": "line-B", "sensor_path": "factory/production/line-B/sensors/temperature", "value": 72.1, "unit": "celsius"}
+    # Example Output:  {"timestamp": 1730115600000, "line": "line-B", "sensor_path": "factory/production/line-B/sensors/temperature", "value": 72.1}
     #
     # Example Input 2: factory/production/line-A/sensors/vibration/axis-x → {"value": 0.05, "unit": "mm/s"}
     # Context vars:    $context.vars.line = "line-A", $context.topic = "factory/production/line-A/sensors/vibration/axis-x"
-    # Example Output:  {"timestamp": 1730115600000, "production_line": "line-A", "sensor_path": "factory/production/line-A/sensors/vibration/axis-x", "value": 0.05, "unit": "mm/s"}
+    # Example Output:  {"timestamp": 1730115600000, "line": "line-A", "sensor_path": "factory/production/line-A/sensors/vibration/axis-x", "value": 0.05}
 
   # Quality control stations across all lines
   qualityControlMapping:
@@ -91,11 +89,11 @@ resources:
     properties:
       mappings:
       - subscribe:
-          # Pattern: factory/+/quality/+/results
-          # Matches:  factory/line-A/quality/station-1/results, 
-          #           factory/line-B/quality/final-inspection/results,
+          # Pattern: ${Cybus::MqttRoot}/factory/+/quality/+/results
+          # Matches:  ${Cybus::MqttRoot}/factory/line-A/quality/station-1/results, 
+          #           ${Cybus::MqttRoot}/factory/line-B/quality/final-inspection/results,
           #           etc.
-          topic: factory/+line/quality/+station/results
+          topic: ${Cybus::MqttRoot}/factory/+line/quality/+station/results
         publish:
           topic: factory/quality/aggregated-results
         rules:
@@ -103,16 +101,15 @@ resources:
             expression: |
               {
                 "timestamp": $now(),
-                "production_line": $context.vars.line,
-                "qc_station": $context.vars.station,
-                "part_id": $.part_id,
+                "line": $context.vars.line,
+                "station": $context.vars.station,
                 "result": $.result,
                 "location": $context.vars.line & "/" & $context.vars.station
               }
     # Example Input 1: factory/line-A/quality/station-1/results → {"part_id": "P12345", "result": "PASS", "defects": 0}
     # Context vars:    $context.vars.line = "line-A", $context.vars.station = "station-1"
-    # Example Output:  {"timestamp": 1730115600000, "production_line": "line-A", "qc_station": "station-1", "part_id": "P12345", "result": "PASS", "location": "line-A/station-1"}
+    # Example Output:  {"timestamp": 1730115600000, "line": "line-A", "station": "station-1", "result": "PASS", "location": "line-A/station-1"}
     #
     # Example Input 2: factory/line-B/quality/final-inspection/results → {"part_id": "P67890", "result": "FAIL", "defects": 2}
     # Context vars:    $context.vars.line = "line-B", $context.vars.station = "final-inspection"
-    # Example Output:  {"timestamp": 1730115600000, "production_line": "line-B", "qc_station": "final-inspection", "part_id": "P67890", "result": "FAIL", "location": "line-B/final-inspection"}
+    # Example Output:  {"timestamp": 1730115600000, "line": "line-B", "station": "final-inspection", "result": "FAIL", "location": "line-B/final-inspection"}

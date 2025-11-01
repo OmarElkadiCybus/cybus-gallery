@@ -123,24 +123,141 @@ Learn dynamic publishing through two progressive approaches:
 - **Multi-tenant systems** with tenant info in payload
 - **Business process automation** with dynamic routing rules
 
-## 💡 UNS (Unified Namespace) Implementation Hint
+## 🏭 UNS (Unified Namespace) Implementation with ISA Standards
 
-**UNS transforms disparate enterprise systems into a single, standardized topic hierarchy.** Dynamic publish topics are **essential** for UNS because:
+**UNS transforms disparate enterprise manufacturing systems into a single, standardized topic hierarchy following ISA-95 and ISA-88 standards.** Dynamic publish topics are **essential** for UNS implementation because they enable automatic transformation from legacy topic structures to standardized enterprise hierarchies.
+
+### ISA Standards Foundation
+
+**ISA-95 (Enterprise-Control System Integration):**
+- **Purpose**: Defines the interface between enterprise and control systems
+- **Levels**: Level 4 (Business), Level 3 (Manufacturing Operations), Level 2 (Supervisory Control), Level 1 (Basic Control), Level 0 (Process)
+- **Hierarchy**: Enterprise → Site → Area → Production Line → Work Cell → Equipment Module
+
+**ISA-88 (Batch Process Control):**
+- **Purpose**: Defines batch manufacturing control systems and equipment
+- **Physical Model**: Enterprise → Site → Area → Process Cell → Unit → Equipment Module → Control Module
 
 ### Why UNS Needs Dynamic Publishing
-- **Legacy Integration**: Transform `legacy/plant-01/line-a/data` → `UNS/Enterprise/plant-01/Area/production/Line/line-a`
-- **ISA-95 Compliance**: Automatically structure topics according to enterprise hierarchy standards
-- **Semantic Consistency**: Extract business meaning from legacy topics and map to standardized paths
 
-### UNS Pattern Examples
+**1. Legacy System Integration**
 ```yaml
-# Legacy System → UNS Transformation
-Input:  legacy/+site/+area/+line/+asset/data
-Output: UNS/Enterprise/{site}/Area/{area}/Line/{line}/Asset/{asset}
-
-# Multi-Protocol UNS
-Input:  protocols/+protocol/+device/+datapoint
-Output: UNS/Systems/{protocol}/Devices/{device}/DataPoints/{datapoint}
+# Transform legacy topics to ISA-95 compliant hierarchy
+Input:  legacy/plant-01/production/line-a/robot-arm/data
+Output: UNS/Enterprise/plant-01/Site/plant-01/Area/production/Line/line-a/WorkCell/assembly/Equipment/robot-arm
 ```
 
-**👉 See [using_wildcards/wildcard-routing.scf.yaml](using_wildcards/wildcard-routing.scf.yaml) for complete UNS implementation example with ISA-95 compliance.**
+**2. ISA-95 Compliance & Automation**
+- **Automatic Level Classification**: Equipment (Level 1), Supervisory (Level 2), Operations (Level 3)
+- **Hierarchical Structure**: Maintain parent-child relationships per ISA-95 specification
+- **Semantic Consistency**: Extract business meaning and map to standardized ISA paths
+
+**3. Multi-Standard Support**
+```yaml
+# ISA-95 Manufacturing Operations Hierarchy
+UNS/Enterprise/{enterprise}/Site/{site}/Area/{area}/Line/{line}/Equipment/{equipment}
+
+# ISA-88 Batch Process Hierarchy  
+UNS/Enterprise/{enterprise}/Site/{site}/Area/{area}/ProcessCell/{cell}/Unit/{unit}/EquipmentModule/{module}
+
+# ISA-18.2 Alarm Management Integration
+UNS/Enterprise/{enterprise}/Site/{site}/Area/{area}/Alarms/{priority}/{category}
+```
+
+### Complete UNS Transformation Examples
+
+**Manufacturing Asset Integration (ISA-95):**
+```yaml
+# Legacy manufacturing data → ISA-95 compliant UNS
+subscribe:
+  topic: ${Cybus::MqttRoot}/legacy/+site/+area/+line/+asset/data
+publish:
+  topic: 'UNS/Enterprise/ManufacturingCorp/Site/{site}/Area/{area}/Line/{line}/Equipment/{asset}'
+rules:
+- transform:
+    expression: |
+      {
+        "isa95_metadata": {
+          "enterprise": "ManufacturingCorp",
+          "site": $context.vars.site,
+          "area": $context.vars.area, 
+          "production_line": $context.vars.line,
+          "equipment": $context.vars.asset,
+          "level": "Level-1-Equipment",
+          "hierarchy_path": "Enterprise/ManufacturingCorp/Site/" & $context.vars.site & "/Area/" & $context.vars.area & "/Line/" & $context.vars.line & "/Equipment/" & $context.vars.asset
+        },
+        "asset_classification": {
+          "isa95_level": $.asset_type = "sensor" ? "Level-0" : $.asset_type = "machine" ? "Level-1" : "Level-2",
+          "equipment_class": $contains($context.vars.asset, "robot") ? "Robotics" : $contains($context.vars.asset, "conveyor") ? "MaterialHandling" : "General"
+        },
+        "operational_data": $
+      }
+```
+
+**Batch Process Integration (ISA-88):**
+```yaml
+# Batch manufacturing → ISA-88 compliant UNS
+subscribe:
+  topic: ${Cybus::MqttRoot}/batch/+site/+area/+cell/+unit/+module/data
+publish:
+  topic: 'UNS/Enterprise/ChemicalCorp/Site/{site}/Area/{area}/ProcessCell/{cell}/Unit/{unit}/EquipmentModule/{module}'
+rules:
+- transform:
+    expression: |
+      {
+        "isa88_metadata": {
+          "enterprise": "ChemicalCorp",
+          "physical_model": {
+            "site": $context.vars.site,
+            "area": $context.vars.area,
+            "process_cell": $context.vars.cell,
+            "unit": $context.vars.unit,
+            "equipment_module": $context.vars.module
+          },
+          "procedural_model": "Recipe-" & $.batch.recipe_id,
+          "control_model": "Phase-" & $.batch.current_phase
+        },
+        "batch_data": $
+      }
+```
+
+### ISA Standard Benefits in UNS
+
+**✅ ISA-95 Manufacturing Operations Management:**
+- **Standardized Hierarchy**: Enterprise → Site → Area → Line → Equipment
+- **Level Classification**: Clear separation of control levels (0-4)
+- **MES Integration**: Manufacturing Execution System compliance
+- **KPI Standardization**: OEE, availability, performance tracking
+
+**✅ ISA-88 Batch Process Control:**
+- **Physical Model**: Site → Area → Process Cell → Unit → Equipment Module  
+- **Procedural Model**: Recipe management and phase control
+- **Control Model**: Equipment control and coordination
+- **Batch Traceability**: Complete batch genealogy and history
+
+**✅ ISA-18.2 Alarm Management:**
+- **Priority Classification**: Critical, High, Medium, Low alarms
+- **Alarm Rationalization**: Reduce alarm floods with proper classification
+- **Response Procedures**: Standardized alarm handling workflows
+
+### UNS Implementation Patterns
+
+```yaml
+# Multi-Standard UNS Hub
+Input Patterns:
+- legacy/+site/+area/+line/+equipment/data           → ISA-95 Manufacturing
+- batch/+site/+area/+cell/+unit/+module/data        → ISA-88 Batch Process  
+- alarms/+site/+area/+priority/+category/data       → ISA-18.2 Alarm Management
+- energy/+site/+area/+system/+meter/data            → ISA-50 Energy Management
+
+Output: UNS/Enterprise/{enterprise}/Site/{site}/...
+```
+
+**🏭 Real-World Benefits:**
+- **Enterprise Integration**: Single namespace for all manufacturing systems
+- **Standard Compliance**: ISA-95, ISA-88, ISA-18.2 adherence
+- **Vendor Neutrality**: Consistent data model regardless of equipment vendor
+- **Digital Twin Ready**: Standardized structure supports digital twin implementations
+- **Analytics Enablement**: Consistent hierarchy enables enterprise-wide analytics
+
+**👉 See [using_wildcards/03_uns_asset_routing.scf.yaml](using_wildcards/03_uns_asset_routing.scf.yaml) for complete ISA-95 compliant UNS implementation with enterprise metadata, asset classification, and standardized hierarchy transformation.**

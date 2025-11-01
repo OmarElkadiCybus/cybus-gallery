@@ -1,145 +1,213 @@
 # Dynamic Publish Topics with Wildcards
 
-**Purpose**: Use wildcard segments from input topics to construct dynamic publish topics  
-**Focus**: Topic-based routing with wildcard values  
-**Prerequisites**: [Basic Wildcards](../../01_basic_wildcards/) understanding
+This section demonstrates using wildcard segments from input topics to construct dynamic publish topics in manufacturing environments. Topic-based routing extracts information from the topic structure itself, enabling asset-specific, line-specific, and facility-specific data routing.
 
-## What You'll Learn
+## Manufacturing Scenarios
 
-By the end of this tutorial, you'll understand:
-- ✅ **Dynamic topic construction** using wildcard values in publish topics
-- ✅ **Context variable usage** with `{variable_name}` syntax in topic strings
-- ✅ **Routing patterns** for building automation and device management
-- ✅ **UNS transformation** for enterprise namespace standardization
+### 1. Machine Data Routing (`01_machine_data_routing.scf.yaml`)
+- **Use Case**: Route machine telemetry to machine-specific analysis topics
+- **Technology**: OPC UA connections to machine monitoring systems
+- **Pattern**: `machines/+machine_id/telemetry/data` → `analytics/machines/{machine_id}/performance/reports`
+- **Focus**: Equipment-specific analytics with performance assessment
 
-## The Problem: Static vs Dynamic Output Topics
+### 2. Line Status Routing (`02_line_status_routing.scf.yaml`)
+- **Use Case**: Route production line data to line-specific dashboards
+- **Technology**: Modbus connections to production line monitoring
+- **Pattern**: `production/lines/+line_id/status/current` → `dashboards/production/{line_id}/shift-reports`
+- **Focus**: Line-specific dashboards with shift performance tracking
 
-Traditional static publishing sends all messages to the same destination:
-```yaml
-# ❌ Static approach - all sensors go to same topic
-subscribe:
-  topic: sensors/kitchen/temperature/data
-publish:
-  topic: processed/sensor/data        # Always the same output topic
-```
+### 3. UNS Asset Routing (`03_uns_asset_routing.scf.yaml`)
+- **Use Case**: Transform legacy data into UNS (Unified Namespace) standard
+- **Technology**: OPC UA connections to legacy asset monitoring systems
+- **Pattern**: `legacy/+site/+area/+line/+asset/data` → `UNS/Enterprise/{site}/Area/{area}/Line/{line}/Asset/{asset}`
+- **Focus**: Enterprise data standardization and ISA-95 compliance
 
-But what if you want different destinations based on the **input topic structure**?
-```yaml
-# ✅ Dynamic approach - route based on input topic segments  
-subscribe:
-  topic: sensors/+room/+sensor/data
-publish:
-  topic: processed/{room}/{sensor}/data  # Dynamic based on wildcards!
-```
+## Key Concepts Demonstrated
 
-## Step 1: Basic Wildcard Routing
+### Manufacturing Wildcard Routing Pattern
 
-Start with simple wildcard value extraction:
+All scenarios use wildcard values from input topics to construct dynamic output topics:
 
 ```yaml
 subscribe:
-  topic: sensors/+room/temperature/data
+  topic: ${Cybus::MqttRoot}/manufacturing/+asset_id/data/input
 publish:
-  topic: 'alerts/{room}/temperature'    # Use {room} from wildcard
+  topic: 'analytics/{asset_id}/reports/output'  # Dynamic based on asset ID
 rules:
 - transform:
     expression: |
       {
-        "room": $context.vars.room,
-        "temperature": $.value,
-        "alert_level": $.value > 25 ? "high" : "normal"
+        "manufacturing_data": $,
+        "asset_context": {
+          "asset_id": $context.vars.asset_id,
+          "routing_path": "analytics/" & $context.vars.asset_id & "/reports/output"
+        }
       }
 ```
 
-**Example Flow:**
-- **Input**: `sensors/kitchen/temperature/data` → `{"value": 27.5}`
-- **Wildcard**: `room = "kitchen"`  
-- **Output Topic**: `alerts/kitchen/temperature`
-- **Output**: `{"room": "kitchen", "temperature": 27.5, "alert_level": "high"}`
+**Manufacturing Benefits:**
+- ✅ **Asset-specific routing**: Each machine, line, or zone gets its own analytics topic
+- ✅ **Hierarchical organization**: Maintain manufacturing structure in output topics  
+- ✅ **Scalable routing**: Automatically handle new assets without configuration changes
+- ✅ **Enterprise integration**: Map manufacturing data to standardized topic hierarchies
 
-## Step 2: Multi-Level Wildcard Routing
+## Manufacturing Wildcard Routing Example
 
-Use multiple wildcard segments for complex routing:
+Machine telemetry routing to machine-specific analytics topics:
 
 ```yaml
 subscribe:
-  topic: devices/+location/+deviceId/+dataType
+  topic: ${Cybus::MqttRoot}/machines/+machine_id/telemetry/data
 publish:
-  topic: 'processed/{location}/devices/{deviceId}/{dataType}'
+  topic: 'analytics/machines/{machine_id}/performance/reports'
 rules:
 - transform:
     expression: |
       {
-        "device_info": {
-          "location": $context.vars.location,
-          "device_id": $context.vars.deviceId,
-          "data_type": $context.vars.dataType
+        "machine_info": {
+          "machine_id": $context.vars.machine_id,
+          "machine_type": $contains($context.vars.machine_id, "cnc") ? "cnc" : "robot"
         },
-        "data": $,
-        "routing_path": $context.vars.location & "/" & $context.vars.deviceId
+        "performance_metrics": $.metrics,
+        "analysis_summary": {
+          "performance_status": $.oee > 0.85 ? "excellent" : "acceptable"
+        }
       }
 ```
 
-**Example Flow:**
-- **Input**: `devices/warehouse-a/sensor-001/diagnostics` → `{"battery": 85, "signal": -65}`
-- **Wildcards**: `location="warehouse-a"`, `deviceId="sensor-001"`, `dataType="diagnostics"`
-- **Output Topic**: `processed/warehouse-a/devices/sensor-001/diagnostics`
-- **Output**: `{"device_info": {...}, "data": {...}, "routing_path": "warehouse-a/sensor-001"}`
+**Manufacturing Flow:**
+- **Input**: `machines/cnc-001/telemetry/data` → `{"oee": 0.87, "metrics": {...}}`
+- **Wildcard**: `machine_id = "cnc-001"`  
+- **Output Topic**: `analytics/machines/cnc-001/performance/reports`
+- **Result**: Machine-specific performance analysis with OEE assessment
 
-## Step 3: Enterprise UNS Transformation
+## Multi-Level Manufacturing Routing
 
-Transform legacy topic structures into standardized enterprise namespaces:
+Production line status routing to line-specific dashboards:
 
 ```yaml
 subscribe:
-  topic: legacy/+site/+area/+line/+asset/data
+  topic: ${Cybus::MqttRoot}/production/lines/+line_id/status/current
 publish:
-  topic: 'UNS/Enterprise/{site}/Area/{area}/Line/{line}/Asset/{asset}'
+  topic: 'dashboards/production/{line_id}/shift-reports'
 rules:
 - transform:
     expression: |
       {
-        "uns_metadata": {
-          "enterprise": "Manufacturing Corp",
+        "line_identification": {
+          "line_id": $context.vars.line_id,
+          "line_number": $substringAfter($context.vars.line_id, "line-"),
+          "facility_area": "production"
+        },
+        "production_status": {
+          "operational_state": $[0] = 1 ? "running" : "stopped",
+          "efficiency_percentage": $[1] / $[2] * 100
+        },
+        "performance_indicators": {
+          "oee_estimation": ($[0] = 1 ? 1 : 0) * ($[1] / $[2]) * ($[3] / 100)
+        }
+      }
+```
+
+**Manufacturing Flow:**
+- **Input**: `production/lines/line-a/status/current` → `[1, 95, 100, 97, 25, 456]`
+- **Wildcard**: `line_id = "line-a"`
+- **Output Topic**: `dashboards/production/line-a/shift-reports`
+- **Result**: Line-specific dashboard with OEE calculation and shift summary
+
+## Enterprise UNS (Unified Namespace) Transformation
+
+Transform legacy manufacturing data into ISA-95 compliant enterprise hierarchy:
+
+```yaml
+subscribe:
+  topic: ${Cybus::MqttRoot}/legacy/+site/+area/+line/+asset/data
+publish:
+  topic: 'UNS/Enterprise/ManufacturingCorp/Site/{site}/Area/{area}/Line/{line}/Equipment/{asset}'
+rules:
+- transform:
+    expression: |
+      {
+        "isa95_hierarchy": {
+          "enterprise": "ManufacturingCorp",
           "site": $context.vars.site,
-          "hierarchy_path": "Enterprise/" & $context.vars.site & "/Area/" & $context.vars.area,
-          "legacy_source": $context.topic
+          "area": $context.vars.area,
+          "line": $context.vars.line,
+          "equipment": $context.vars.asset,
+          "full_path": "Enterprise/ManufacturingCorp/Site/" & $context.vars.site & "/Area/" & $context.vars.area & "/Line/" & $context.vars.line & "/Equipment/" & $context.vars.asset
         },
-        "process_data": $,
-        "uns_compliant": true
+        "isa95_classification": {
+          "level": $.asset_type = "machine" ? "Level-1" : "Level-0",
+          "class": $contains($context.vars.asset, "robot") ? "Robotics" : "General"
+        },
+        "wildcard_routing": {
+          "extracted_values": {
+            "site": $context.vars.site,
+            "area": $context.vars.area,
+            "line": $context.vars.line,
+            "asset": $context.vars.asset
+          },
+          "topic_transformation": {
+            "from": $context.topic,
+            "to": "UNS/Enterprise/ManufacturingCorp/Site/" & $context.vars.site & "/Area/" & $context.vars.area & "/Line/" & $context.vars.line & "/Equipment/" & $context.vars.asset
+          }
+        },
+        "asset_data": $.data
       }
 ```
 
-**Example Flow:**
-- **Input**: `legacy/plant-01/production/line-a/robot-arm-02/data` → `{"status": "running", "oee": 0.85}`
-- **Wildcards**: `site="plant-01"`, `area="production"`, `line="line-a"`, `asset="robot-arm-02"`
-- **Output Topic**: `UNS/Enterprise/plant-01/Area/production/Line/line-a/Asset/robot-arm-02`
-- **Result**: ISA-95 compliant enterprise hierarchy with full traceability
+**ISA-95 UNS Flow:**
+- **Input**: `legacy/plant-01/production/line-a/robot-arm/data` → `{"asset_type": "machine", "status": "running", "oee": 0.87}`
+- **Wildcards**: `site="plant-01"`, `area="production"`, `line="line-a"`, `asset="robot-arm"`
+- **Output Topic**: `UNS/Enterprise/ManufacturingCorp/Site/plant-01/Area/production/Line/line-a/Equipment/robot-arm`
+- **Result**: ISA-95 compliant enterprise hierarchy with clear wildcard routing demonstration
 
-## Key Benefits
+## Benefits of Wildcard Routing in Manufacturing
 
-✅ **Topic-based Routing**: Route messages based on their topic structure
-✅ **Hierarchical Organization**: Maintain topic hierarchies in output
-✅ **System Integration**: Map input structures to output requirements
-✅ **Scalability**: Handle new topic variations automatically
+✅ **Asset-Specific Routing**: Each machine, line, or facility gets dedicated analytics topics
+✅ **Manufacturing Hierarchy**: Maintain production structure in data organization
+✅ **Enterprise Integration**: Map legacy systems to standardized topic hierarchies
+✅ **Scalable Asset Management**: Automatically handle new equipment without configuration
+✅ **UNS Compliance**: Transform data into ISA-95 compliant enterprise namespaces
 
-## Examples Included
+## When to Use Wildcard Routing in Manufacturing
 
-- **Building Automation**: Route sensor data by room and sensor type
-- **Device Management**: Route device data by location and device ID
-- **Multi-tenant Systems**: Route data by tenant and service
-- **Alert Systems**: Route alerts by severity and source
-- **UNS Implementation**: Transform enterprise data into unified namespace hierarchies
+### ✅ **Perfect Manufacturing Use Cases:**
+- **Equipment-specific analytics**: Machine telemetry routing to machine-specific dashboards
+- **Production line monitoring**: Line status routing to line-specific shift reports
+- **Enterprise data standardization**: Legacy system transformation to UNS standards
+- **Multi-site manufacturing**: Facility-specific data organization and routing
+- **Asset hierarchy maintenance**: Preserve manufacturing structure in data flow
+- **Maintenance system integration**: Route asset data to asset-specific maintenance topics
 
-## When to Use
+### ❌ **Not Ideal For:**
+- **Condition-based routing**: Use setContextVars for routing based on data content
+- **Complex manufacturing workflows**: Use setContextVars for business logic routing  
+- **Alert severity routing**: Use setContextVars for priority-based routing
+- **Cross-system integration**: Use array subscription for incompatible topic structures
 
-**Perfect for:**
-- Input topics contain routing information in their structure
-- Need to maintain hierarchical organization
-- Routing logic is based on topic segments
-- Simple, predictable routing patterns
-- **UNS (Unified Namespace)**: Map enterprise data to standardized topic hierarchies
+### 🔄 **Combining with SetContextVars**
 
-**Not ideal for:**
-- Routing based on payload content (use setContextVars instead)
-- Complex conditional routing logic
+For comprehensive manufacturing routing, combine wildcard structure with payload analysis:
+
+```yaml
+subscribe:
+  topic: ${Cybus::MqttRoot}/machines/+machine_id/+data_type/monitoring
+publish:
+  topic: 'alerts/{machine_id}/{priority}/{data_type}/notifications'
+rules:
+- setContextVars:
+    vars:
+      machine_id: $context.vars.machine_id      # Use wildcard values
+      data_type: $context.vars.data_type
+      priority: $.severity > 0.8 ? "high" : "normal"  # Extract from payload
+```
+
+This approach provides efficient asset-based routing with intelligent condition-driven priorities.
+
+## Manufacturing Implementation Examples
+
+The three SCF files demonstrate complete working examples:
+- **Machine data routing** with equipment-specific performance analytics
+- **Production line routing** with line-specific dashboard integration  
+- **UNS asset routing** with enterprise standardization and ISA-95 compliance

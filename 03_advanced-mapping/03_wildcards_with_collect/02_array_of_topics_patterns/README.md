@@ -1,202 +1,249 @@
-# Array Subscription with Wildcards & Dynamic Labels
+# Array of Topics Patterns with Wildcards and Collect
 
-- **Specialty**: Handle multiple incompatible topic structures in a single mapping
-- **Focus**: Wildcard names + dynamic labels manage heterogeneous data streams
+This section demonstrates using array subscription to handle multiple incompatible topic structures in manufacturing environments. Array subscription is essential when different systems use incompatible topic patterns that cannot be unified with a single wildcard pattern.
 
-## The Array Subscription Specialty
+## Manufacturing Scenarios
 
-**Array subscription with wildcards** is the **only solution** when you need to integrate topics that have:
-- **Different root paths** (cannot use single wildcard)
-- **Different hierarchical depths** (varying topic levels)
+### 1. Manufacturing Integration (`01_manufacturing_integration.scf.yaml`)
+- **Use Case**: Cross-system analytics for production, quality, and maintenance
+- **Technology**: OPC UA connections to different manufacturing systems
+- **Topic Patterns**: 
+  - `production/lines/+line/status`
+  - `quality/batches/+batch/results`  
+  - `maintenance/equipment/+equipment/schedule`
+- **Focus**: Multi-domain integration with different topic structures
+
+### 2. Supply Chain Visibility (`02_supply_chain_visibility.scf.yaml`)
+- **Use Case**: End-to-end supply chain monitoring across facilities
+- **Technology**: Modbus connections to inventory, warehouse, and supplier systems
+- **Topic Patterns**:
+  - `inventory/materials/+material/level`
+  - `inventory/products/+product/level`
+  - `logistics/warehouses/+warehouse/storage`
+  - `suppliers/+supplier/deliveries`
+- **Focus**: Cross-facility coordination with heterogeneous data sources
+
+### 3. Energy Management (`03_energy_management.scf.yaml`)
+- **Use Case**: Multi-utility monitoring for facility optimization
+- **Technology**: Mixed OPC UA and Modbus connections to utility systems
+- **Topic Patterns**:
+  - `energy/electrical/+area/consumption`
+  - `energy/compressed-air/+compressor/metrics`
+  - `energy/cooling/systems/+chiller/status`
+- **Focus**: Cross-utility analytics with different topic depths
+
+## Why Array Subscription is Essential
+
+
+**Array subscription** solves integration challenges when manufacturing systems use:
+- **Different root paths** (production/, quality/, maintenance/, energy/)
+- **Different hierarchical depths** (3, 4, or 5 topic levels)  
 - **Different business domains** (incompatible naming conventions)
 
-
-### ✅ Array Subscription Solution
+### Manufacturing Array Subscription Pattern
 ```yaml
-# This HANDLES any topic structure complexity:
 subscribe:
-  - topic: factory/production/+line/status      # 4 levels
+  - topic: ${Cybus::MqttRoot}/production/lines/+line/status
     label: 'prod_{line}'
-  - topic: maintenance/+equipment/next          # 3 levels  
+  - topic: ${Cybus::MqttRoot}/quality/batches/+batch/results
+    label: 'quality_{batch}'
+  - topic: ${Cybus::MqttRoot}/maintenance/equipment/+equipment/schedule
     label: 'maint_{equipment}'
-  - topic: quality/inspection/+batch/+test/result  # 5 levels
-    label: 'quality_{batch}_{test}'
-```
-
-**Complexity Handled:**
-- ✅ **Mixed depths**: 3, 4, 5 topic levels in same service
-- ✅ **Different domains**: factory, maintenance, quality systems
-- ✅ **Unique naming**: Each domain uses its own conventions
-
-## How Wildcard Names Solve Complexity
-
-**Wildcard names** (`{name}`) are the **key innovation** that makes array subscription manageable:
-
-### Problem: Heterogeneous Topic Structures
-```yaml
-# Real enterprise scenarios - completely different structures:
-factory/production/line-a/status           # Manufacturing
-maintenance/schedule/pump-005/next         # Maintenance  
-quality/inspection/batch-001/pcr/result    # Laboratory
-inventory/warehouse-b/steel/level          # Supply chain
-security/building-1/floor-3/camera-12/alert # Security
-```
-
-### Solution: Semantic Wildcard Names
-```yaml
-subscribe:
-  - topic: factory/production/+line/status
-    label: 'prod_{line}'                   # Extracts: line="line-a"
-  - topic: maintenance/schedule/+equipment/next  
-    label: 'maint_{equipment}'             # Extracts: equipment="pump-005"
-  - topic: quality/inspection/+batch/+test/result
-    label: 'qual_{batch}_{test}'           # Extracts: batch="batch-001", test="pcr"
-  - topic: inventory/+warehouse/+material/level
-    label: 'inv_{warehouse}_{material}'    # Extracts: warehouse="warehouse-b", material="steel"
-  - topic: security/+building/+floor/+camera/alert
-    label: 'sec_{building}_{floor}_{camera}' # Extracts: building="building-1", floor="floor-3", camera="camera-12"
-```
-
-**Complexity Management:**
-- 🎯 **Semantic extraction**: Names like `{line}`, `{equipment}` have business meaning
-- 🔑 **Unique identification**: Each wildcard combination creates distinct cache keys
-- 🏗️ **Structured access**: Transform can process by domain using naming patterns
-
-## What is a Collect Rule?
-
-A **collect rule** stores the **last received message** from each subscribed topic in a **key-value cache** using **dynamic labels as keys**. When any new message arrives, the collect rule triggers and provides access to **all cached data** from all topics.
-
-```yaml
-subscribe:
-  - topic: sensors/+room/temperature
-    label: '{room}_temp'
 
 rules:
-- collect: {}  # Stores all incoming messages
-- transform:   # Triggered on each new message
+- collect: {}  # Aggregates all different topic structures
+- transform:   # Process complete cross-system dataset
     expression: |
       {
-        "all_data": $,           # Access to ALL cached messages
-        "trigger": $context.topic # Which topic triggered this transform
+        "all_systems": $,
+        "triggered_by": $context.topic
       }
 ```
 
-**Input/Output Example:**
+**Manufacturing Benefits:**
+- ✅ **Multi-system integration**: Production, quality, maintenance in one service
+- ✅ **Cross-domain analytics**: Correlate different manufacturing systems
+- ✅ **Unified monitoring**: Single dashboard for heterogeneous systems
+
+## Dynamic Labels for Manufacturing Systems
+
+**Dynamic labels** using wildcard values create unique identification for each manufacturing asset:
+
+### Example: Cross-System Manufacturing Topics
+```yaml
+# Different manufacturing systems - incompatible topic structures:
+production/lines/line-a/status             # Production domain
+quality/batches/batch-001/results          # Quality domain  
+maintenance/equipment/robot-001/schedule   # Maintenance domain
+energy/electrical/main-panel/consumption   # Energy domain
 ```
-📨 Message 1: sensors/kitchen/temperature → {"value": 22.5}
-📨 Message 2: sensors/office/temperature → {"value": 24.1}
-📨 Message 3: sensors/lobby/temperature → {"value": 21.8}
 
-✨ Transform Output (triggered by any message):
-{
-  "all_data": {
-    "kitchen_temp": {"value": 22.5},
-    "office_temp": {"value": 24.1}, 
-    "lobby_temp": {"value": 21.8}
-  },
-  "trigger": "sensors/lobby/temperature"  // Last message that triggered
-}
+### Dynamic Label Solution
+```yaml
+subscribe:
+  - topic: ${Cybus::MqttRoot}/production/lines/+line/status
+    label: 'prod_{line}'                   # Creates: prod_line-a
+  - topic: ${Cybus::MqttRoot}/quality/batches/+batch/results
+    label: 'quality_{batch}'               # Creates: quality_batch-001
+  - topic: ${Cybus::MqttRoot}/maintenance/equipment/+equipment/schedule
+    label: 'maint_{equipment}'             # Creates: maint_robot-001
+  - topic: ${Cybus::MqttRoot}/energy/electrical/+area/consumption
+    label: 'elec_{area}'                   # Creates: elec_main-panel
 ```
 
-## Why Dynamic Labels are Essential
+**Manufacturing Benefits:**
+- 🎯 **Asset identification**: Each machine, line, or system gets unique storage
+- 🔑 **Domain separation**: Labels include system type for easy filtering
+- 🏗️ **Cross-correlation**: Compare and analyze across different manufacturing domains
 
-**The Problem**: Without dynamic labels, data gets overwritten!
+## Collect Rule for Cross-System Analytics
 
-### ❌ Static Labels Example - Different Topic Structures with Data Loss
+A **collect rule** aggregates the **latest data** from each manufacturing system in a **key-value cache**. When any system sends new data, the rule triggers and provides **complete visibility** across all integrated systems.
 
 ```yaml
 subscribe:
-  - topic: factory/production/+line/status      # 4 levels
-    label: 'production_data'                    # Same label for all production!
-  - topic: maintenance/+equipment/next          # 3 levels
-    label: 'maintenance_data'                   # Same label for all maintenance!
-  - topic: quality/inspection/+batch/+test/result  # 5 levels
-    label: 'quality_data'                       # Same label for all quality!
+  - topic: ${Cybus::MqttRoot}/production/lines/+line/status
+    label: 'prod_{line}'
+  - topic: ${Cybus::MqttRoot}/quality/batches/+batch/results
+    label: 'quality_{batch}'
+
+rules:
+- collect: {}  # Stores all manufacturing system data
+- transform:   # Triggered when any system updates
+    expression: |
+      {
+        "all_systems": $,
+        "updated_system": $context.topic,
+        "timestamp": $now()
+      }
+```
+
+**Manufacturing Data Flow:**
+```
+📨 Production: production/lines/line-a/status → {"oee": 0.85, "output": 120}
+📨 Quality: quality/batches/batch-001/results → {"passed": 45, "failed": 2}
+📨 Maintenance: maintenance/equipment/robot-001/schedule → {"next": "2024-11-15", "priority": "medium"}
+
+✨ Analytics Output (triggered by maintenance update):
+{
+  "all_systems": {
+    "prod_line-a": {"oee": 0.85, "output": 120},
+    "quality_batch-001": {"passed": 45, "failed": 2},
+    "maint_robot-001": {"next": "2024-11-15", "priority": "medium"}
+  },
+  "updated_system": "maintenance/equipment/robot-001/schedule",
+  "timestamp": 1730529600000
+}
+```
+
+## Why Dynamic Labels Prevent Manufacturing Data Loss
+
+**Critical Issue**: Without dynamic labels, manufacturing data from similar systems gets overwritten!
+
+### ❌ Static Labels Example - Manufacturing Data Loss
+
+```yaml
+subscribe:
+  - topic: ${Cybus::MqttRoot}/production/lines/+line/status
+    label: 'production_data'                    # Same label for ALL lines!
+  - topic: ${Cybus::MqttRoot}/energy/electrical/+area/consumption
+    label: 'electrical_data'                    # Same label for ALL areas!
 
 rules:
 - collect: {}
 - transform:
     expression: |
       {
-        "cached_data": $,
-        "message_count": $count($keys($))
+        "manufacturing_data": $,
+        "system_count": $count($keys($))
       }
 ```
 
-**Input Messages (Different Topic Structures):**
+**Multiple Manufacturing Systems Reporting:**
 ```
-📨 factory/production/line-a/status → {"line": "line-a", "status": "running", "output": 45}
-📨 factory/production/line-b/status → {"line": "line-b", "status": "idle", "output": 0}  
-📨 maintenance/pump-005/next → {"equipment": "pump-005", "date": "2024-10-28", "hours": 4}
-📨 maintenance/conveyor-belt/next → {"equipment": "conveyor-belt", "date": "2024-10-29", "hours": 2}
-📨 quality/inspection/batch-001/pcr/result → {"batch": "batch-001", "test": "pcr", "passed": true}
-📨 quality/inspection/batch-002/visual/result → {"batch": "batch-002", "test": "visual", "passed": false}
+📨 production/lines/line-a/status → {"oee": 0.85, "output": 120}
+📨 production/lines/line-b/status → {"oee": 0.79, "output": 95}
+📨 energy/electrical/main-panel/consumption → {"power_kw": 285.4, "current_a": 396.7}
+📨 energy/electrical/production-area/consumption → {"power_kw": 142.8, "current_a": 199.3}
 ```
 
-**❌ Static Labels Result:**
+**❌ Static Labels Result - Data Loss:**
 ```json
 {
-  "cached_data": {
-    "production_data": {"line": "line-b", "status": "idle", "output": 0},      // Only last production!
-    "maintenance_data": {"equipment": "conveyor-belt", "date": "2024-10-29", "hours": 2}, // Only last maintenance!
-    "quality_data": {"batch": "batch-002", "test": "visual", "passed": false}  // Only last quality!
+  "manufacturing_data": {
+    "production_data": {"oee": 0.79, "output": 95},      // Only Line B!
+    "electrical_data": {"power_kw": 142.8, "current_a": 199.3}  // Only production area!
   },
-  "message_count": 3  // Lost 3 out of 6 messages! ⚠️
+  "system_count": 2  // Lost Line A & main panel data! ⚠️
 }
 ```
 
-### ✅ Dynamic Labels Example - Different Structures, All Data Preserved
+### ✅ Dynamic Labels Example - Complete Manufacturing Visibility
 
 ```yaml
 subscribe:
-  - topic: factory/production/+line/status      # 4 levels
-    label: 'prod_{line}'                        # Unique label per production line
-  - topic: maintenance/+equipment/next          # 3 levels  
-    label: 'maint_{equipment}'                  # Unique label per equipment
-  - topic: quality/inspection/+batch/+test/result  # 5 levels
-    label: 'qual_{batch}_{test}'                # Unique label per batch+test
+  - topic: ${Cybus::MqttRoot}/production/lines/+line/status
+    label: 'prod_{line}'                        # Unique per production line
+  - topic: ${Cybus::MqttRoot}/energy/electrical/+area/consumption
+    label: 'elec_{area}'                        # Unique per electrical area
+  - topic: ${Cybus::MqttRoot}/quality/batches/+batch/results
+    label: 'quality_{batch}'                    # Unique per quality batch
 
 rules:
 - collect: {}
 - transform:
     expression: |
       {
-        "cached_data": $,
-        "message_count": $count($keys($)),
-        "domain_breakdown": {
+        "manufacturing_data": $,
+        "system_count": $count($keys($)),
+        "system_breakdown": {
           "production_lines": $count($filter($keys($), function($k) { $contains($k, 'prod_') })),
-          "maintenance_items": $count($filter($keys($), function($k) { $contains($k, 'maint_') })),
-          "quality_tests": $count($filter($keys($), function($k) { $contains($k, 'qual_') }))
+          "electrical_areas": $count($filter($keys($), function($k) { $contains($k, 'elec_') })),
+          "quality_batches": $count($filter($keys($), function($k) { $contains($k, 'quality_') }))
         }
       }
 ```
 
-**Same Input Messages (Different Topic Structures):**
+**Same Manufacturing Systems Reporting:**
 ```
-📨 factory/production/line-a/status → {"line": "line-a", "status": "running", "output": 45}
-📨 factory/production/line-b/status → {"line": "line-b", "status": "idle", "output": 0}  
-📨 maintenance/pump-005/next → {"equipment": "pump-005", "date": "2024-10-28", "hours": 4}
-📨 maintenance/conveyor-belt/next → {"equipment": "conveyor-belt", "date": "2024-10-29", "hours": 2}
-📨 quality/inspection/batch-001/pcr/result → {"batch": "batch-001", "test": "pcr", "passed": true}
-📨 quality/inspection/batch-002/visual/result → {"batch": "batch-002", "test": "visual", "passed": false}
+📨 production/lines/line-a/status → {"oee": 0.85, "output": 120}
+📨 production/lines/line-b/status → {"oee": 0.79, "output": 95}
+📨 energy/electrical/main-panel/consumption → {"power_kw": 285.4, "current_a": 396.7}
+📨 energy/electrical/production-area/consumption → {"power_kw": 142.8, "current_a": 199.3}
+📨 quality/batches/batch-001/results → {"passed": 45, "failed": 2, "score": 95.7}
 ```
 
-**✅ Dynamic Labels Result:**
+**✅ Dynamic Labels Result - Complete Analytics:**
 ```json
 {
-  "cached_data": {
-    "prod_line-a": {"line": "line-a", "status": "running", "output": 45},
-    "prod_line-b": {"line": "line-b", "status": "idle", "output": 0},
-    "maint_pump-005": {"equipment": "pump-005", "date": "2024-10-28", "hours": 4},
-    "maint_conveyor-belt": {"equipment": "conveyor-belt", "date": "2024-10-29", "hours": 2},
-    "qual_batch-001_pcr": {"batch": "batch-001", "test": "pcr", "passed": true},
-    "qual_batch-002_visual": {"batch": "batch-002", "test": "visual", "passed": false}
+  "manufacturing_data": {
+    "prod_line-a": {"oee": 0.85, "output": 120},
+    "prod_line-b": {"oee": 0.79, "output": 95},
+    "elec_main-panel": {"power_kw": 285.4, "current_a": 396.7},
+    "elec_production-area": {"power_kw": 142.8, "current_a": 199.3},
+    "quality_batch-001": {"passed": 45, "failed": 2, "score": 95.7}
   },
-  "message_count": 6,  // All 6 messages preserved! 🎉
-  "domain_breakdown": {
+  "system_count": 5,  // All manufacturing systems tracked! 🎉
+  "system_breakdown": {
     "production_lines": 2,
-    "maintenance_items": 2, 
-    "quality_tests": 2
+    "electrical_areas": 2,
+    "quality_batches": 1
   }
 }
 ```
+
+## When to Use Array Subscription in Manufacturing
+
+**Perfect Manufacturing Use Cases:**
+- **Multi-system integration**: Production + Quality + Maintenance systems
+- **Cross-facility monitoring**: Different sites with incompatible topic structures
+- **Mixed protocol environments**: OPC UA + Modbus + HTTP systems in one service
+- **Different data depths**: Systems with varying topic hierarchy levels
+
+**Key Implementation Points:**
+- Use `${Cybus::MqttRoot}` prefix for internal topic security
+- Keep transformations simple and focused on aggregation concepts
+- Include realistic manufacturing endpoints and protocols
+- Provide clear examples showing cross-system benefits
+
+**Next**: [Dynamic Publish Topics](../../04_dynamic_publish_topic/) for context-driven topic publishing

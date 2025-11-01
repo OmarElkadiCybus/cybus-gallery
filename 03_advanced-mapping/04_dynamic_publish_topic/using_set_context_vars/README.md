@@ -1,191 +1,219 @@
 # Dynamic Publish Topics with SetContextVars
 
-**Purpose**: Use payload data to construct dynamic publish topics using the setContextVars rule  
-**Focus**: Content-based routing with business logic  
-**Prerequisites**: [Basic Wildcards](../../01_basic_wildcards/), JSONata expressions, and conditional logic
+This section demonstrates using payload data to construct dynamic publish topics in manufacturing environments. The setContextVars rule extracts routing information from message content, enabling intelligent routing based on manufacturing conditions, priorities, and business logic.
 
-## What You'll Learn
+## Manufacturing Scenarios
 
-By the end of this tutorial, you'll master:
-- ✅ **SetContextVars rule** for extracting routing info from message payloads
-- ✅ **Business logic routing** with conditional expressions and data-driven decisions
-- ✅ **Multi-tenant architectures** with organization and service-based routing
-- ✅ **Complex routing patterns** combining multiple payload fields and business rules
+### 1. Quality Alert Routing (`01_quality_alert_routing.scf.yaml`)
+- **Use Case**: Route quality alerts to department-specific topics based on product type and defect severity
+- **Technology**: OPC UA connection to quality inspection system
+- **Routing Logic**: Product category determines department, defect count determines severity
+- **Focus**: Department-specific quality notifications with priority-based routing
 
-## The Challenge: Content-Driven Routing
+### 2. Maintenance Priority Routing (`02_maintenance_priority_routing.scf.yaml`)
+- **Use Case**: Route equipment condition alerts to appropriate maintenance teams
+- **Technology**: Modbus connection to equipment condition monitoring
+- **Routing Logic**: Equipment type determines team, condition metrics determine priority
+- **Focus**: Team-specific maintenance work orders with urgency-based routing
 
-Wildcard routing works great when routing info is in the topic structure. But what about routing based on **message content**?
+### 3. Energy Alert Routing (`03_energy_alert_routing.scf.yaml`)
+- **Use Case**: Route energy consumption alerts to departments based on impact and zones
+- **Technology**: OPC UA connection to energy management system
+- **Routing Logic**: Zone area determines department, efficiency metrics determine impact
+- **Focus**: Department-specific energy optimization with cost-impact routing
 
-```yaml
-# ❌ Topic-based routing can't handle this
-Input Topic: system/alerts/incoming           # Same topic for all alerts
-Payload 1:   {"tenant": "acme", "priority": "critical", "service": "billing"}
-Payload 2:   {"tenant": "globex", "priority": "low", "service": "reports"}
+## Key Concepts Demonstrated
 
-# Need different destinations based on payload content:
-# → alerts/acme/critical/billing
-# → alerts/globex/low/reports
-```
+### Manufacturing Content-Driven Routing Pattern
 
-**Solution**: Use `setContextVars` to extract routing information from the payload.
-
-## Step 1: Basic Payload-Based Routing
-
-Start by extracting simple values from the payload:
+All scenarios use setContextVars to extract routing information from manufacturing data:
 
 ```yaml
 subscribe:
-  topic: system/alerts/incoming
+  topic: ${Cybus::MqttRoot}/manufacturing/data/input
 publish:
-  topic: 'alerts/{tenant}/{priority}/notifications'
+  topic: 'alerts/{department}/{priority}/notifications'
 rules:
 - setContextVars:
     vars:
-      tenant: $.organization.tenant_id      # Extract from payload
-      priority: $.alert.severity_level      # Extract from payload
+      department: $.category_based_logic  # Extract from payload
+      priority: $.condition_based_logic   # Extract from payload
 - transform:
     expression: |
       {
-        "alert_info": $,
+        "manufacturing_data": $,
         "routing_context": {
-          "tenant": $context.vars.tenant,
-          "priority": $context.vars.priority
+          "department": $context.vars.department,
+          "priority": $context.vars.priority,
+          "final_topic": "alerts/" & $context.vars.department & "/" & $context.vars.priority & "/notifications"
         }
       }
 ```
 
-**Example Flow:**
-- **Input Topic**: `system/alerts/incoming`
-- **Payload**: `{"organization": {"tenant_id": "acme"}, "alert": {"severity_level": "critical", "message": "DB down"}}`
-- **SetContextVars**: `tenant="acme"`, `priority="critical"`
-- **Output Topic**: `alerts/acme/critical/notifications`
+**Manufacturing Benefits:**
+- ✅ **Intelligent routing**: Route alerts based on manufacturing conditions and context
+- ✅ **Department-specific**: Ensure alerts reach the appropriate teams quickly
+- ✅ **Priority-based**: Critical issues get routed to high-priority channels
+- ✅ **Business logic**: Apply manufacturing rules and thresholds for routing decisions
 
-## Step 2: Conditional Business Logic Routing
+## Manufacturing Payload-Based Routing Example
 
-Add business rules and conditional logic to routing decisions:
+Quality alert routing based on product category and defect severity:
 
 ```yaml
 subscribe:
-  topic: business/events/orders
+  topic: ${Cybus::MqttRoot}/quality/inspection/results
 publish:
-  topic: 'processing/{region}/{category}/{urgency}/orders'
+  topic: 'alerts/quality/{department}/{severity}/notifications'
 rules:
 - setContextVars:
     vars:
-      region: $.customer.shipping_address.region
-      category: |                               # Business logic in expressions
-        $.order.total_amount > 1000 ? "enterprise" :
-        $.order.total_amount > 100 ? "business" : "standard"
-      urgency: |                                # Conditional routing rules
-        $.order.rush_delivery = true ? "urgent" :
-        $.order.total_amount > 500 ? "priority" : "normal"
+      department: |
+        $.product.category = "automotive" ? "automotive-qc" :
+        $.product.category = "aerospace" ? "aerospace-qc" : "general-qc"
+      severity: |
+        $.inspection.defect_count > 5 ? "critical" :
+        $.inspection.defect_count > 2 ? "high" : "medium"
 - transform:
     expression: |
       {
-        "order_data": $,
-        "business_routing": {
-          "region": $context.vars.region,
-          "category": $context.vars.category,
-          "urgency": $context.vars.urgency,
-          "routing_logic": "Amount: " & $string($.order.total_amount) & " → " & $context.vars.category
+        "quality_data": $,
+        "routing_context": {
+          "department": $context.vars.department,
+          "severity": $context.vars.severity
         }
       }
 ```
 
-**Example Flow:**
-- **Payload**: `{"customer": {"shipping_address": {"region": "us-west"}}, "order": {"total_amount": 1250, "rush_delivery": true}}`
-- **Business Logic**: Amount > 1000 → "enterprise", rush_delivery = true → "urgent"
-- **Output Topic**: `processing/us-west/enterprise/urgent/orders`
+**Manufacturing Flow:**
+- **Input**: Quality inspection results from OPC UA system
+- **Payload**: `{"product": {"category": "automotive"}, "inspection": {"defect_count": 3}}`
+- **SetContextVars**: `department="automotive-qc"`, `severity="high"`
+- **Output Topic**: `alerts/quality/automotive-qc/high/notifications`
 
-## Step 3: Advanced Multi-Field Routing
+## Manufacturing Conditional Logic Routing
 
-Combine multiple payload fields with complex conditional logic:
+Maintenance priority routing based on equipment condition and type:
 
 ```yaml
 subscribe:
-  topic: iot/telemetry/incoming
+  topic: ${Cybus::MqttRoot}/maintenance/condition/monitoring
 publish:
-  topic: 'devices/{device_type}/{location}/{status}/data'
+  topic: 'maintenance/teams/{team}/{priority}/work-orders'
 rules:
 - setContextVars:
     vars:
-      device_type: $.device.type
-      location: $.device.metadata.installation_site
-      status: |                                 # Complex multi-condition logic
-        $.telemetry.battery_level < 20 ? "low-battery" :
-        $.telemetry.signal_strength < -80 ? "poor-signal" :
-        $.telemetry.error_count > 0 ? "maintenance-needed" : 
-        $.device.last_maintenance_days > 90 ? "maintenance-due" : "operational"
+      team: |                                   # Equipment type logic
+        $[0] = 1 ? "mechanical" :
+        $[0] = 2 ? "electrical" :
+        $[0] = 3 ? "hydraulic" : "general"
+      priority: |                               # Condition-based priority
+        $[2] > 90 or $[3] > 80 ? "urgent" :
+        $[2] > 70 or $[3] > 60 ? "high" : "medium"
 - transform:
     expression: |
       {
-        "telemetry_data": $,
-        "device_routing": {
-          "health_status": $context.vars.status,
-          "needs_attention": $context.vars.status != "operational",
+        "condition_data": $,
+        "maintenance_routing": {
+          "team": $context.vars.team,
+          "priority": $context.vars.priority,
+          "routing_logic": "Equipment type: " & $string($[0]) & " → Team: " & $context.vars.team & ", Temp: " & $string($[2]) & "°C → Priority: " & $context.vars.priority
+        }
+      }
+```
+
+**Manufacturing Flow:**
+- **Payload**: `[2, 101, 85, 75, 2450, 28, 0, 1]` (Modbus array: equipment_type=2, temp=85°C, vibration=75)
+- **Logic**: Type 2 → "electrical" team, Temp > 70°C → "high" priority
+- **Output Topic**: `maintenance/teams/electrical/high/work-orders`
+
+## Advanced Manufacturing Multi-Field Routing
+
+Energy alert routing based on zone, efficiency, and cost impact:
+
+```yaml
+subscribe:
+  topic: ${Cybus::MqttRoot}/energy/consumption/analysis
+publish:
+  topic: 'alerts/energy/{department}/{impact}/optimization'
+rules:
+- setContextVars:
+    vars:
+      department: |                             # Zone-based department routing
+        $.zone.area = "production" ? "production-ops" :
+        $.zone.area = "facilities" ? "facilities-mgmt" : "energy-mgmt"
+      impact: |                                 # Multi-condition impact assessment
+        $.analysis.efficiency_drop > 20 ? "critical" :
+        $.analysis.cost_increase > 15 ? "high" :
+        $.analysis.efficiency_drop > 10 ? "medium" : "low"
+- transform:
+    expression: |
+      {
+        "energy_data": $,
+        "alert_routing": {
+          "department": $context.vars.department,
+          "impact": $context.vars.impact,
+          "requires_optimization": $.analysis.efficiency_drop > 10,
           "routing_decisions": {
-            "battery_ok": $.telemetry.battery_level >= 20,
-            "signal_ok": $.telemetry.signal_strength >= -80,
-            "no_errors": $.telemetry.error_count = 0
+            "efficiency_ok": $.analysis.efficiency_drop <= 10,
+            "cost_acceptable": $.analysis.cost_increase <= 15
           }
         }
       }
 ```
 
-**Example Flow:**
-- **Payload**: `{"device": {"type": "temp-sensor", "metadata": {"installation_site": "warehouse-a"}}, "telemetry": {"battery_level": 15, "error_count": 0}}`
-- **Complex Logic**: Battery < 20 → "low-battery" status  
-- **Output Topic**: `devices/temp-sensor/warehouse-a/low-battery/data`
+**Manufacturing Flow:**
+- **Payload**: `{"zone": {"area": "production"}, "analysis": {"efficiency_drop": 15.5, "cost_increase": 18.3}}`
+- **Logic**: Production zone → "production-ops", Cost increase > 15% → "high" impact
+- **Output Topic**: `alerts/energy/production-ops/high/optimization`
 
-## Key Benefits of SetContextVars Routing
+## Benefits of SetContextVars in Manufacturing
 
-✅ **Business Logic Integration**: Apply complex conditional rules based on data values  
-✅ **Multi-tenant Architecture**: Route by organization, customer, or service from payload  
-✅ **Dynamic Decision Making**: Different destinations based on real-time data analysis  
-✅ **Content Awareness**: Route based on message meaning, not just structure  
-✅ **Flexible Conditions**: Handle any JSONata expression for routing logic
+✅ **Manufacturing Intelligence**: Apply production rules and thresholds for smart routing  
+✅ **Department-Specific Alerts**: Route quality, maintenance, and energy alerts to correct teams  
+✅ **Priority-Based Routing**: Critical manufacturing issues get routed to high-priority channels  
+✅ **Condition-Aware Routing**: Route based on manufacturing data analysis and conditions  
+✅ **Business Logic Integration**: Apply manufacturing workflows and escalation rules
 
-## When to Use SetContextVars Routing
+## When to Use SetContextVars in Manufacturing
 
-### ✅ **Perfect For:**
-- **Multi-tenant SaaS platforms**: Route by organization, customer, service level
-- **Alert and notification systems**: Route by severity, escalation, destination rules  
-- **Business process automation**: Apply workflow routing based on data content
-- **IoT device management**: Route by device health, location, type from telemetry
-- **E-commerce order processing**: Route by value, region, priority, customer tier
-- **Complex conditional scenarios**: When routing depends on multiple data fields
+### ✅ **Perfect Manufacturing Use Cases:**
+- **Quality alert systems**: Route by product category, defect severity, inspection results
+- **Maintenance notifications**: Route by equipment type, condition severity, team specialization  
+- **Energy optimization alerts**: Route by consumption zone, efficiency thresholds, cost impact
+- **Production workflow automation**: Route based on manufacturing conditions and priorities
+- **Multi-site manufacturing**: Route by facility, production line, equipment type
+- **Safety and compliance alerts**: Route by hazard type, severity level, response team
 
 ### ❌ **Not Ideal For:**
-- **Simple topic-based routing**: Use [wildcards](../using_wildcards/) instead for better performance
-- **Static routing patterns**: No need for setContextVars overhead
-- **High-frequency data streams**: Processing overhead may impact performance
-- **Simple hierarchical routing**: Wildcard patterns are more efficient
+- **Simple asset-based routing**: Use [wildcards](../using_wildcards/) for better performance
+- **Static manufacturing hierarchies**: Wildcard patterns are more efficient
+- **High-frequency sensor data**: Processing overhead may impact performance
+- **Simple machine-to-dashboard routing**: Direct topic mapping is sufficient
 
 ### 🔄 **Combining Both Approaches**
 
-For ultimate flexibility, combine wildcard and payload routing:
+For comprehensive manufacturing routing, combine wildcard and payload analysis:
 
 ```yaml
 subscribe:
-  topic: tenant/+tenant_id/+service/events    # Wildcards for basic structure
+  topic: ${Cybus::MqttRoot}/manufacturing/+facility/+line/alerts    # Wildcards for structure
 publish:
-  topic: 'processing/{tenant_id}/{service}/{priority}/{region}/data'
+  topic: 'alerts/{facility}/{line}/{department}/{priority}/notifications'
 rules:
 - setContextVars:
     vars:
-      # Use wildcard values
-      tenant_id: $context.vars.tenant_id
-      service: $context.vars.service
-      # Extract from payload  
-      priority: $.metadata.priority_level
-      region: $.customer.region
+      facility: $context.vars.facility        # Use wildcard values
+      line: $context.vars.line
+      department: $.alert_category_logic      # Extract from payload  
+      priority: $.severity_analysis
 ```
 
-This pattern gives you the best of both worlds: efficient topic-based routing with intelligent content-driven decisions.
+This pattern provides efficient asset-based routing with intelligent manufacturing condition analysis.
 
-## Real-World Applications
+## Manufacturing Implementation Examples
 
-See the [contextvar-routing.scf.yaml](./contextvar-routing.scf.yaml) file for complete working examples including:
-- **Multi-tenant alert routing** with organization and priority-based destinations
-- **Business order processing** with amount-based categorization and urgency rules
-- **IoT device health monitoring** with condition-based maintenance routing
+The three SCF files in this section demonstrate complete working examples:
+- **Quality alert routing** with product category and defect severity analysis
+- **Maintenance priority routing** with equipment type and condition assessment
+- **Energy alert routing** with zone-based departments and efficiency impact analysis

@@ -32,6 +32,38 @@ vehicle/truck-005/engine/diagnostics  # Fleet management
 
 **Solution**: Use array subscriptions to handle incompatible structures.
 
+## Array Subscription Options
+
+You can use arrays with **two different subscription methods**:
+
+### 1. Topic Strings (External MQTT)
+```yaml
+subscribe:
+  - topic: external/system/data    # External MQTT topic
+    label: external_data
+```
+
+### 2. Endpoint References (Connectware Endpoints)  
+```yaml
+subscribe:
+  - endpoint: !ref myOpcuaEndpoint   # Reference to defined endpoint
+    label: opcua_data
+```
+
+### 3. Mixed Arrays (Both Types)
+```yaml
+subscribe:
+  - endpoint: !ref cncMachine        # OPC UA endpoint reference
+    label: cnc_data
+  - topic: external/mqtt/sensor      # External MQTT topic  
+    label: mqtt_data
+```
+
+**Key Benefits:**
+- ✅ **Endpoint References**: Automatically use the endpoint's configured topic with `${Cybus::MqttRoot}` prefix
+- ✅ **Topic Strings**: Subscribe to external MQTT topics or specific internal paths
+- ✅ **Mixed Arrays**: Combine both patterns in a single mapping for maximum flexibility
+
 ## When to Use Arrays
 
 ✅ **Use arrays when:**
@@ -68,25 +100,43 @@ rules:
 
 Add labels to identify each data source:
 
+**Option A: Topic Strings**
 ```yaml
 subscribe:
   - topic: factory/machine/pump-001/status
     label: 'factory_system'              # Label identifies the source
   - topic: building/hvac/main/temperature  
     label: 'building_system'
-  - topic: vehicle/truck-005/diagnostics
-    label: 'vehicle_system'
 rules:
 - transform:
     expression: |
       {
         "timestamp": $now(),
-        "data": $,
-        "source_label": $context.label    # ✅ Now you know the source!
+        "data": $
+        # ❌ Problem: Still can't identify the source without collect!
       }
 ```
 
-**Each topic triggers separately** - you get one message per input topic.
+**Option B: Endpoint References**  
+```yaml
+subscribe:
+  - endpoint: !ref factoryEndpoint        # Reference to OPC UA endpoint
+    label: 'factory_system'
+  - endpoint: !ref buildingEndpoint       # Reference to Modbus endpoint  
+    label: 'building_system'
+rules:
+- transform:
+    expression: |
+      {
+        "timestamp": $now(),
+        "data": $
+        # ❌ Problem: Still can't identify the source without collect!
+      }
+```
+
+**Important**: Labels alone don't help identify sources in transforms! **Each topic triggers separately** - you get one message per input topic, but you can't tell which one sent it.
+
+**To access labels, you MUST use a collect rule.**
 
 ## Step 3: Arrays with Collect (The Power Pattern)
 
@@ -95,24 +145,34 @@ Use collect rule to aggregate ALL array sources into one payload:
 ```yaml
 subscribe:
   - topic: factory/machine/pump-001/status
-    label: 'factory'
+    label: 'factory'                     # Label becomes object key
   - topic: building/hvac/main/temperature  
-    label: 'building'
+    label: 'building'                    # Label becomes object key
   - topic: vehicle/truck-005/diagnostics
-    label: 'vehicle'
+    label: 'vehicle'                     # Label becomes object key
 rules:
-- collect: {}                             # Collect all labeled sources
+- collect: {}                            # Creates: {"factory": data1, "building": data2, "vehicle": data3}
 - transform:
     expression: |
       {
         "timestamp": $now(),
-        "factory_data": $lookup($, 'factory'),      # Access by label
-        "building_data": $lookup($, 'building'),    # Access by label  
-        "vehicle_data": $lookup($, 'vehicle'),      # Access by label
+        "factory_data": $lookup($, 'factory'),      # Use label as key
+        "building_data": $lookup($, 'building'),    # Use label as key  
+        "vehicle_data": $lookup($, 'vehicle'),      # Use label as key
         "all_systems_ok": $lookup($, 'factory').status = "ok" and 
                          $lookup($, 'building').temp < 25 and
                          $lookup($, 'vehicle').engine = "running"
       }
+```
+
+**What the collect rule does:**
+```
+Individual messages:           After collect rule:
+factory → {"status": "ok"}  →  {
+building → {"temp": 22}     →    "factory": {"status": "ok"},
+vehicle → {"engine": "off"} →    "building": {"temp": 22},
+                           →    "vehicle": {"engine": "off"}
+                           →  }
 ```
 
 **Key Benefits:**
@@ -120,9 +180,34 @@ rules:
 - 📊 **Correlated processing**: Make decisions based on multiple systems
 - 🎯 **Single output**: One enriched message instead of separate outputs
 
+## Real Manufacturing Examples
+
+This tutorial includes three comprehensive manufacturing scenarios demonstrating array mapping in practice:
+
+### [01_multi_protocol_line.scf.yaml](./01_multi_protocol_line.scf.yaml)
+**Multi-Protocol Production Line Analytics**
+- **Scenario**: Combine OPC UA machines, Modbus sensors, and MQTT devices 
+- **Array Usage**: Different protocol sources with collect rule
+- **Real Equipment**: CNC machines (OPC UA), temperature sensors (Modbus), robot controllers (MQTT)
+- **Use Case**: Unified production line monitoring across multiple protocols
+
+### [02_cross_factory_oee.scf.yaml](./02_cross_factory_oee.scf.yaml)
+**Cross-Factory OEE Comparison**
+- **Scenario**: Enterprise-level OEE analytics across multiple factory locations
+- **Array Usage**: Different factory systems with performance benchmarking
+- **Real Systems**: Automotive plant (Detroit), Electronics plant (Austin), Aerospace plant (Seattle)
+- **Use Case**: Corporate-level manufacturing performance comparison and best practice identification
+
+### [03_supply_chain_visibility.scf.yaml](./03_supply_chain_visibility.scf.yaml)
+**End-to-End Supply Chain Integration**
+- **Scenario**: Warehouse, production, and logistics systems integration
+- **Array Usage**: Cross-functional system coordination with health monitoring
+- **Real Systems**: WMS (inventory), MES (production status), TMS (shipping logistics)
+- **Use Case**: Supply chain visibility dashboard with automated health assessments
+
 ## Core Concept: Array with Labels and Collect
 
-The example demonstrates the most common pattern - using arrays with labels and collect rule:
+The examples demonstrate the most common pattern - using arrays with labels and collect rule:
 
 ```yaml
 mappings:
@@ -177,9 +262,13 @@ mappings:
 ## How This Works
 
 1. **Array Subscription**: Subscribe to multiple topics with different roots
-2. **Labels**: Each topic gets a label (`factory`, `building`, `vehicle`)
-3. **Collect Rule**: Aggregates all labeled payloads into one object
-4. **JSONata Access Pattern**: Use `$lookup($, 'label_name')` to access cached data by label
+2. **Labels**: Each topic gets a label (`factory`, `building`, `vehicle`) 
+3. **Collect Rule**: **This is key!** Aggregates all labeled payloads into one object where **labels become object keys**
+4. **JSONata Access Pattern**: Use `$lookup($, 'label_name')` to access data by the label name
+
+**Critical Understanding:** 
+- ❌ **Without collect**: Labels are meaningless - you can't access them in transforms
+- ✅ **With collect**: Labels become keys in the collected object: `{"factory": {...}, "building": {...}}`
 
 ## Key Benefits
 
