@@ -28,28 +28,6 @@ Connect Cybus Connectware to PLCs, sensors, cloud platforms, and custom systems 
 | **[HTTP Integration](./http-post-mqtt/)** | RESTful APIs | HTTP-to-MQTT bridging |
 | **[HTTP Write](./http-write-cnc/)** | CNC Commands | HTTP-based machine control |
 
-## 🔒 Security & Custom Protocols
-
-| Type | Purpose | Implementation |
-|------|---------|----------------|
-| **[TLS Certificates](./mqtt-tls-certificates/)** | Secure MQTT | Client certificate authentication |
-| **[User Management](./user-management/)** | Access Control | Role-based permissions |
-| **[Custom TCP](./custom-tcp/)** | Proprietary Protocols | Build your own connectors |
-
-## 🚀 Quick Deployment
-
-Each protocol example includes ready-to-use SCF files:
-
-```bash
-# Example: Deploy OPC UA integration
-cd opcua
-docker run --rm -v ${PWD}:/workspace cybus/connectware-cli deploy /workspace/opcua-example-commissioning-file.yml
-
-# Example: Deploy Modbus TCP integration  
-cd modbus
-docker run --rm -v ${PWD}:/workspace cybus/connectware-cli deploy /workspace/modbus-read-example.scf.yaml
-```
-
 ## 📋 What Each Example Contains
 
 - **SCF Configuration** - Service commissioning file with connection parameters
@@ -63,7 +41,6 @@ docker run --rm -v ${PWD}:/workspace cybus/connectware-cli deploy /workspace/mod
 **For PLCs**: OPC UA (universal), S7 (Siemens), EtherNet/IP (Rockwell), ADS (Beckhoff)  
 **For Sensors**: SOPAS (SICK), Modbus TCP (universal), BACnet (building automation)  
 **For CNC**: FOCAS (FANUC), Heidenhain DNC, custom TCP connectors  
-**For Assembly**: OpenProtocol (Atlas Copco tools), custom integrations  
 **For Cloud**: AWS IoT, Azure IoT with edge computing support
 
 ## 📞 Support Resources
