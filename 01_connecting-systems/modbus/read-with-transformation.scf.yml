@@ -82,7 +82,7 @@ resources:
             expression: |
               {
                 "sensor_id": "TEMP_001",
-                "temperature_celsius": $ / 10,
+                "temperature_celsius": $.value / 10,
                 "timestamp": $now()
               }
       
