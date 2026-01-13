@@ -60,8 +60,6 @@ Connect industrial devices, transform data, and monitor your systems with proven
 Monitor and visualize your Industrial IoT data:
 
 - **[Elasticsearch & Kibana](./monitoring/elasticsearch/)** - Search and visualize data
-- **[Grafana & Loki](./monitoring/grafana-loki/)** - Log aggregation and monitoring
-- **[Azure Monitoring](./monitoring/azure-monitoring/)** - Cloud-based monitoring
 
 **[→ All monitoring examples](./monitoring/)**
 
